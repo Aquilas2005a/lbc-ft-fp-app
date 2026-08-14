@@ -61,25 +61,33 @@ T04 - Organisation GitHub :
 T05 - CI backend minimale :
 - Workflow cree : `.github/workflows/backend-ci.yml`.
 - Verification actuelle : presence du dossier `backend/`, presence de `.env.example`, disponibilite de Python.
-- Le workflow sera enrichi avec les tests FastAPI apres T07.
+- Le workflow a ete enrichi en T07 pour installer les dependances backend et lancer `pytest`.
 
 T06 - CI frontend minimale :
 - Workflow cree : `.github/workflows/frontend-ci.yml`.
 - Verification actuelle : presence du dossier `frontend/`, presence de `.env.example`, disponibilite de Node.js.
 - Le workflow sera enrichi avec le build Vite React apres T24.
 
-## 4. Tache immediate a faire apres T06
+T07 - Squelette FastAPI :
+- Application backend creee dans `backend/app`.
+- Endpoint public ajoute : `/health`.
+- Endpoint versionne ajoute : `/api/v1/health`.
+- Documentation OpenAPI disponible via `/openapi.json` et Swagger via `/docs`.
+- Tests backend ajoutes dans `backend/tests`.
+- CI backend mise a jour pour executer les tests reels.
 
-T07 - Creer le squelette FastAPI :
-- Creer l'application backend minimale.
-- Ajouter un endpoint `/health`.
-- Verifier que Swagger est disponible.
-- Preparer les premiers tests backend reels.
+## 4. Tache immediate a faire apres T07
+
+T08 - Ajouter Docker Compose PostgreSQL :
+- Creer `docker-compose.yml`.
+- Ajouter un service `db` avec PostgreSQL.
+- Utiliser les variables de `.env.example`.
+- Verifier que PostgreSQL ecoute sur `localhost:5432`.
 
 Objectif immediat :
-- Avoir une API qui demarre localement.
-- Remplacer la CI backend placeholder par des tests applicatifs.
-- Poser une base propre avant Docker PostgreSQL.
+- Avoir la base cible du projet.
+- Permettre la connexion depuis FastAPI en T11.
+- Permettre la connexion depuis pgAdmin en T09.
 
 ## 5. Problemes possibles et contournements
 
@@ -110,6 +118,14 @@ CI creee avant le code applicatif :
 Versions Python multiples :
 - Probleme : `python` et `py` peuvent pointer vers des versions differentes.
 - Contournement : utiliser une commande explicite, par exemple `py -3.14`, puis creer un environnement virtuel dans `backend/.venv`.
+
+Tests backend avec dependances non installees :
+- Probleme : `pytest` echoue si FastAPI, httpx ou pytest ne sont pas installes.
+- Contournement : installer `backend/requirements-dev.txt` dans un environnement virtuel local avant les tests.
+
+Warning FastAPI TestClient :
+- Probleme : les tests passent, mais Starlette affiche un avertissement indiquant que le support `httpx` classique est deprecie dans le TestClient.
+- Contournement : garder le test actuel car il est fonctionnel, puis migrer vers `httpx2` ou vers un client de test asynchrone si l'avertissement devient bloquant.
 
 ## 6. Commandes utiles
 
@@ -147,6 +163,29 @@ Demarrer plus tard PostgreSQL :
 
 ```powershell
 docker compose up -d db
+```
+
+Installer les dependances backend :
+
+```powershell
+cd backend
+py -3.14 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
+Tester le backend :
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Demarrer l'API FastAPI :
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ## 7. Liens
