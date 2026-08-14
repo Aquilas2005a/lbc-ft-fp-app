@@ -52,16 +52,34 @@ T03 - Documentation de demarrage :
 - `.gitignore` protege les fichiers locaux, caches, environnements virtuels et dependances.
 - `.env.example` donne le modele des variables d'environnement.
 
-## 4. Tache immediate a faire apres T03
+T04 - Organisation GitHub :
+- Labels GitHub crees pour organiser les taches : `task`, `mvp`, `github`, `ci`, `backend`, `database`, `docker`, `documentation`.
+- Milestone creee : `MVP 1 - API utilisable`.
+- Issues creees pour T04 a T15 afin de suivre les taches courtes du premier MVP.
+- Le tableau GitHub Project visuel reste optionnel car il demande un scope GitHub supplementaire.
 
-T04 - Creer le tableau GitHub Issues/Project :
-- Creer une issue GitHub par tache progressive.
-- Ajouter au minimum les issues T04 a T10 pour organiser le debut.
-- Prioriser les taches backend et Docker avant l'interface.
+T05 - CI backend minimale :
+- Workflow cree : `.github/workflows/backend-ci.yml`.
+- Verification actuelle : presence du dossier `backend/`, presence de `.env.example`, disponibilite de Python.
+- Le workflow sera enrichi avec les tests FastAPI apres T07.
+
+T06 - CI frontend minimale :
+- Workflow cree : `.github/workflows/frontend-ci.yml`.
+- Verification actuelle : presence du dossier `frontend/`, presence de `.env.example`, disponibilite de Node.js.
+- Le workflow sera enrichi avec le build Vite React apres T24.
+
+## 4. Tache immediate a faire apres T06
+
+T07 - Creer le squelette FastAPI :
+- Creer l'application backend minimale.
+- Ajouter un endpoint `/health`.
+- Verifier que Swagger est disponible.
+- Preparer les premiers tests backend reels.
 
 Objectif immediat :
-- Avoir une vision claire du travail dans GitHub.
-- Permettre a chaque etudiant de prendre une tache courte sans confusion.
+- Avoir une API qui demarre localement.
+- Remplacer la CI backend placeholder par des tests applicatifs.
+- Poser une base propre avant Docker PostgreSQL.
 
 ## 5. Problemes possibles et contournements
 
@@ -80,6 +98,14 @@ OpenSanctions peut demander une cle API :
 GitHub CLI installe mais parfois non visible avec `gh` :
 - Probleme : le terminal peut ne pas trouver `gh` dans le PATH.
 - Contournement : utiliser le chemin complet `C:\Program Files\GitHub CLI\gh.exe`.
+
+GitHub Projects demande un scope supplementaire :
+- Probleme : la commande `gh project list` demande le scope `read:project`.
+- Contournement : utiliser issues + milestone pour le suivi immediat, puis lancer `gh auth refresh -s project` si un vrai tableau Project est necessaire.
+
+CI creee avant le code applicatif :
+- Probleme : il n'y a pas encore de backend FastAPI ni de frontend Vite React.
+- Contournement : mettre des workflows structurels maintenant, puis les transformer en tests/builds reels aux taches T07 et T24.
 
 Versions Python multiples :
 - Probleme : `python` et `py` peuvent pointer vers des versions differentes.
@@ -105,6 +131,18 @@ Voir le repository distant :
 & "C:\Program Files\GitHub CLI\gh.exe" repo view Aquilas2005a/lbc-ft-fp-app
 ```
 
+Lister les issues du MVP :
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" issue list --repo Aquilas2005a/lbc-ft-fp-app --milestone "MVP 1 - API utilisable"
+```
+
+Rafraichir les scopes GitHub pour utiliser GitHub Projects :
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" auth refresh -s project
+```
+
 Demarrer plus tard PostgreSQL :
 
 ```powershell
@@ -117,4 +155,3 @@ docker compose up -d db
 - Documentation OpenSanctions matching : https://www.opensanctions.org/docs/api/matching/
 - Documentation FastAPI : https://fastapi.tiangolo.com/
 - Documentation React : https://react.dev/
-

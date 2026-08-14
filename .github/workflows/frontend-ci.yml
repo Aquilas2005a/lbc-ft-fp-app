@@ -1,0 +1,37 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  frontend-structure:
+    name: Frontend structure check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify frontend workspace
+        run: |
+          test -d frontend
+          test -f .env.example
+          node --version
+
+      - name: Prepare for future React build
+        run: |
+          echo "Vite React will be initialized in T24."
+          echo "Frontend build checks will be expanded after package.json exists."
+
