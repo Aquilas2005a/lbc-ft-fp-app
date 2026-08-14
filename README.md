@@ -83,16 +83,22 @@ T08 - PostgreSQL avec Docker Compose :
 - Volume Docker `postgres_data` ajoute pour conserver les donnees entre les redemarrages.
 - Healthcheck `pg_isready` ajoute pour savoir quand la base est prete.
 
-## 4. Tache immediate a faire apres T08
+T09 - Connexion pgAdmin :
+- Documentation ajoutee dans `docs/database.md` pour ajouter le serveur Docker dans pgAdmin.
+- Fichier `.env` local cree avec le mot de passe de developpement et protege par `.gitignore`.
+- Mot de passe du role PostgreSQL local synchronise avec `.env`, sans supprimer le volume de donnees.
+- Procedure de test et de depannage ajoutee, incluant le risque de suppression avec `docker compose down -v`.
 
-T09 - Documenter la connexion pgAdmin :
-- Verifier le lancement de PostgreSQL avec Docker Compose.
-- Documenter les champs de connexion pgAdmin : hote, port, base, utilisateur et mot de passe.
-- Ajouter une procedure courte de verification et de depannage.
+## 4. Tache immediate a faire apres T09
+
+T10 - Poser les dependances de persistance backend :
+- Ajouter SQLAlchemy, Alembic et le pilote PostgreSQL dans les dependances backend.
+- Preparer la configuration de session base de donnees depuis `DATABASE_URL`.
+- Verifier que les dependances sont installables dans l'environnement virtuel.
 
 Objectif immediat :
-- Permettre a un etudiant de se connecter a PostgreSQL avec pgAdmin.
-- Confirmer que les donnees Docker restent disponibles apres un redemarrage.
+- Preparer FastAPI a communiquer avec PostgreSQL sans encore creer de tables metier.
+- Garder la configuration locale et les secrets hors GitHub.
 
 ## 5. Problemes possibles et contournements
 
@@ -107,6 +113,10 @@ Port PostgreSQL deja utilise :
 Mot de passe de demonstration :
 - Probleme : les valeurs de `.env.example` sont publiques et ne conviennent pas a un environnement reel.
 - Contournement : creer un fichier `.env` local avec un mot de passe unique avant de partager ou deployer l'application.
+
+Mot de passe modifie apres le premier lancement Docker :
+- Probleme : `POSTGRES_PASSWORD` initialise PostgreSQL seulement lors de la creation du volume ; changer `.env` seul ne modifie pas un role deja cree.
+- Contournement : changer le mot de passe du role explicitement, ou reinitialiser uniquement une base de demonstration vide avec `docker compose down -v`.
 
 pgAdmin installe mais PostgreSQL absent localement :
 - Probleme : pgAdmin n'est pas une base de donnees, seulement une interface.
@@ -189,6 +199,12 @@ Arreter PostgreSQL sans supprimer les donnees :
 
 ```powershell
 docker compose down
+```
+
+Consulter le guide pgAdmin :
+
+```powershell
+Get-Content docs/database.md
 ```
 
 Installer les dependances backend :
