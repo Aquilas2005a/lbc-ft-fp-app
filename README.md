@@ -76,24 +76,37 @@ T07 - Squelette FastAPI :
 - Tests backend ajoutes dans `backend/tests`.
 - CI backend mise a jour pour executer les tests reels.
 
-## 4. Tache immediate a faire apres T07
+T08 - PostgreSQL avec Docker Compose :
+- Fichier `docker-compose.yml` ajoute a la racine du projet.
+- Service `db` base sur PostgreSQL 16 Alpine configure.
+- Variables PostgreSQL lues depuis `.env` ou leurs valeurs de demonstration de `.env.example`.
+- Volume Docker `postgres_data` ajoute pour conserver les donnees entre les redemarrages.
+- Healthcheck `pg_isready` ajoute pour savoir quand la base est prete.
 
-T08 - Ajouter Docker Compose PostgreSQL :
-- Creer `docker-compose.yml`.
-- Ajouter un service `db` avec PostgreSQL.
-- Utiliser les variables de `.env.example`.
-- Verifier que PostgreSQL ecoute sur `localhost:5432`.
+## 4. Tache immediate a faire apres T08
+
+T09 - Documenter la connexion pgAdmin :
+- Verifier le lancement de PostgreSQL avec Docker Compose.
+- Documenter les champs de connexion pgAdmin : hote, port, base, utilisateur et mot de passe.
+- Ajouter une procedure courte de verification et de depannage.
 
 Objectif immediat :
-- Avoir la base cible du projet.
-- Permettre la connexion depuis FastAPI en T11.
-- Permettre la connexion depuis pgAdmin en T09.
+- Permettre a un etudiant de se connecter a PostgreSQL avec pgAdmin.
+- Confirmer que les donnees Docker restent disponibles apres un redemarrage.
 
 ## 5. Problemes possibles et contournements
 
 Docker installe mais daemon arrete :
 - Probleme : PostgreSQL via Docker ne demarre pas si Docker Desktop est ferme.
 - Contournement : lancer Docker Desktop avant `docker compose up`.
+
+Port PostgreSQL deja utilise :
+- Probleme : Docker ne peut pas publier `localhost:5432` si un autre PostgreSQL utilise deja ce port.
+- Contournement : modifier `POSTGRES_PORT` dans le fichier `.env`, par exemple `POSTGRES_PORT=5433`, puis utiliser le meme port dans pgAdmin et `DATABASE_URL`.
+
+Mot de passe de demonstration :
+- Probleme : les valeurs de `.env.example` sont publiques et ne conviennent pas a un environnement reel.
+- Contournement : creer un fichier `.env` local avec un mot de passe unique avant de partager ou deployer l'application.
 
 pgAdmin installe mais PostgreSQL absent localement :
 - Probleme : pgAdmin n'est pas une base de donnees, seulement une interface.
@@ -163,6 +176,19 @@ Demarrer plus tard PostgreSQL :
 
 ```powershell
 docker compose up -d db
+```
+
+Verifier PostgreSQL :
+
+```powershell
+docker compose ps
+docker compose exec -T db pg_isready -U lbc_user -d lbc_db
+```
+
+Arreter PostgreSQL sans supprimer les donnees :
+
+```powershell
+docker compose down
 ```
 
 Installer les dependances backend :
