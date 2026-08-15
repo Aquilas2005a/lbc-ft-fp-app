@@ -26,6 +26,7 @@ class Transaction(Base):
     status: Mapped[str] = mapped_column(String(20), default="completed", nullable=False)
     counterparty_name: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     counterparty_account: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    counterparty_country: Mapped[Optional[str]] = mapped_column(String(2), nullable=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

@@ -165,8 +165,15 @@ T20 - Scoring de risque client explicable :
 ## 4. Tache immediate apres T20
 
 T21 - Regles d'anomalies transactionnelles :
-- Isoler et documenter les regles deterministes de montant eleve et de frequence inhabituelle deja utilisees pour les alertes.
-- Ajouter un endpoint de reevaluation pour analyser les transactions existantes sans modifier leur statut ni leur solde.
+- Les alertes couvrent le seuil de montant, la frequence inhabituelle et le pays de contrepartie configure dans `HIGH_RISK_COUNTRIES`.
+- `counterparty_country` est valide en ISO alpha-2 et stocke via la migration `0006_tx_counterparty_country`.
+- `POST /api/v1/transactions/{transaction_id}/evaluate-alerts` reexecute les regles sur une transaction existante, deduplique les alertes et ne modifie ni solde ni statut.
+
+## 4. Tache immediate apres T21
+
+T22 - Exports de conformite :
+- Ajouter des exports CSV filtres pour les alertes, transactions et decisions de revue.
+- Garder les exports explicites et telechargeables, sans inclure de secret ni de donnees inutiles.
 
 
 
@@ -248,6 +255,10 @@ Audit sans alerte :
 Scoring de risque :
 - Probleme : un score calcule peut sembler etre une decision de conformite s'il n'est pas explique.
 - Contournement : T20 expose les facteurs et le niveau, conserve les champs de sanction comme des valeurs renseignees manuellement et n'ajoute aucun blocage automatique.
+
+Pays a risque et migrations :
+- Probleme : une liste de pays figee dans le code devient vite obsolete et une revision Alembic trop longue ne peut pas etre stockee par PostgreSQL.
+- Contournement : `HIGH_RISK_COUNTRIES` est defini par la politique approuvee de l'institution et les identifiants Alembic restent inferieurs ou egaux a 32 caracteres.
 
 ## 6. Commandes utiles
 

@@ -89,6 +89,21 @@ def create_transaction_alerts(
         if alert:
             alerts.append(alert)
 
+    if transaction.counterparty_country in settings.high_risk_countries:
+        alert = _create_once(
+            db,
+            alert_type="HIGH_RISK_COUNTRY_TRANSACTION",
+            severity="HIGH",
+            client_id=client_id,
+            transaction_id=transaction.id,
+            description=(
+                f"Transaction impliquant le pays de contrepartie "
+                f"{transaction.counterparty_country}, configure comme a risque."
+            ),
+        )
+        if alert:
+            alerts.append(alert)
+
     window_start = transaction.timestamp - timedelta(
         hours=settings.transaction_frequency_window_hours
     )

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     high_transaction_amount: float = Field(default=1_000_000.0, gt=0.0)
     transaction_frequency_count: int = Field(default=3, ge=2, le=100)
     transaction_frequency_window_hours: int = Field(default=24, ge=1, le=168)
+    high_risk_countries: Annotated[list[str], NoDecode] = []
     screening_mode: Literal["mock", "opensanctions", "auto"] = "mock"
     open_sanctions_api_url: str = "https://api.opensanctions.org"
     open_sanctions_api_key: str | None = Field(
@@ -48,6 +49,12 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
+
+    @field_validator("high_risk_countries", mode="before")
+    @classmethod
+    def normalize_high_risk_countries(cls, value: str | list[str]) -> list[str]:
+        values = value.split(",") if isinstance(value, str) else value
+        return sorted({item.strip().upper() for item in values if item.strip()})
 
     @property
     def resolved_database_url(self) -> str:

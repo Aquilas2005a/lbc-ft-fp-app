@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -10,10 +11,16 @@ from app.core.audit import record_audit
 from app.db.session import get_db
 from app.models.account import Account
 from app.models.transaction import Transaction
+from app.schemas.alert import AlertRead
 from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.alerting import create_transaction_alerts
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
+
+
+class TransactionRuleEvaluationRead(BaseModel):
+    transaction_id: int
+    alerts_created: list[AlertRead]
 
 
 @router.post("", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
@@ -129,3 +136,72 @@ def get_transaction(
             detail=f"Transaction ID {transaction_id} introuvable.",
         )
     return tx
+
+
+@router.post(
+    "/{transaction_id}/evaluate-alerts",
+    response_model=TransactionRuleEvaluationRead,
+)
+def evaluate_transaction_alerts(
+    transaction_id: int,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> TransactionRuleEvaluationRead:
+    """Evaluate existing data without changing transaction status or account balance."""
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    if not transaction:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Transaction ID {transaction_id} introuvable.",
+        )
+    account = db.query(Account).filter(Account.id == transaction.account_id).first()
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Compte ID {transaction.account_id} introuvable.",
+        )
+
+    alerts = create_transaction_alerts(
+        db,
+        transaction=transaction,
+        client_id=account.client_id,
+        settings=settings,
+    )
+    if alerts:
+        db.flush()
+        for alert in alerts:
+            record_audit(
+                db,
+                action="CREATE_ALERT",
+                entity_type="Alert",
+                entity_id=str(alert.id),
+                user_id=actor,
+                details=(
+                    f"Alerte {alert.alert_type} creee par reevaluation "
+                    f"de la transaction {transaction.id}."
+                ),
+            )
+    record_audit(
+        db,
+        action="EVALUATE_TRANSACTION_RULES",
+        entity_type="Transaction",
+        entity_id=str(transaction.id),
+        user_id=actor,
+        details=f"Reevaluation terminee, {len(alerts)} alerte(s) nouvelle(s).",
+    )
+    try:
+        db.commit()
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La reevaluation des regles a echoue.",
+        ) from exc
+
+    for alert in alerts:
+        db.refresh(alert)
+    return TransactionRuleEvaluationRead(
+        transaction_id=transaction.id,
+        alerts_created=alerts,
+    )

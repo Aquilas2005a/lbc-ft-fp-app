@@ -16,6 +16,7 @@ class TransactionBase(BaseModel):
     status: TransactionStatus = "completed"
     counterparty_name: Optional[str] = Field(None, max_length=150)
     counterparty_account: Optional[str] = Field(None, max_length=50)
+    counterparty_country: Optional[str] = Field(None, min_length=2, max_length=2)
 
     @field_validator("currency")
     @classmethod
@@ -23,6 +24,16 @@ class TransactionBase(BaseModel):
         normalized = value.strip().upper()
         if len(normalized) != 3:
             raise ValueError("La devise doit etre un code ISO a trois lettres.")
+        return normalized
+
+    @field_validator("counterparty_country")
+    @classmethod
+    def normalize_counterparty_country(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().upper()
+        if len(normalized) != 2 or not normalized.isalpha():
+            raise ValueError("Le pays de contrepartie doit etre un code ISO alpha-2.")
         return normalized
 
 
