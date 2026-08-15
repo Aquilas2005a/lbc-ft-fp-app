@@ -130,11 +130,17 @@ T16 - Service de Matching Local RapidFuzz :
 - Liste de reference locale pour le screening hors-ligne et endpoints `POST /api/v1/screening/match` et `POST /api/v1/screening/client/{id}`.
 - Normalisation des accents, tirets, espaces et casse ; seuil par defaut de `85` configurable avec `DEFAULT_MATCH_THRESHOLD`.
 
-## 4. Tache immediate a faire apres T16
+T17 - Alertes automatiques et revue humaine :
+- Une alerte est creee pour une transaction au-dessus de `HIGH_TRANSACTION_AMOUNT`, pour une frequence inhabituelle et pour un match de screening client.
+- Les alertes sont dedupliquees, exposees par l'API (`GET /api/v1/alerts`) et leur revue exige une note ainsi qu'une transition de statut valide.
+- La migration Alembic `0004_add_alert_review_fields` conserve la note, l'acteur de demonstration et la date de revue.
+- Aucun match flou ne modifie automatiquement le statut de sanction d'un client et aucune alerte ne bloque une transaction : la decision reste humaine.
 
-T17 - Creer modele Alertes et generation auto sur match :
-- Generer automatiquement une alerte lorsqu'une transaction depasse un seuil ou lorsqu'un client correspond a une liste de screening.
-- Ne jamais transformer automatiquement un match flou en decision de sanction : une revue humaine reste obligatoire.
+## 4. Tache immediate apres T17
+
+T18 - Tracabilite complete de la revue :
+- Enregistrer chaque creation, screening et decision sur alerte dans `audit_logs` avec l'acteur applicatif.
+- Remplacer l'acteur de demonstration `system` par l'identite authentifiee lorsque le module JWT sera introduit.
 
 
 
@@ -200,6 +206,14 @@ Tests et base de demonstration :
 Matching local :
 - Probleme : un score RapidFuzz est un indicateur de similarite, pas une preuve de sanction ou une decision de conformite.
 - Contournement : conserver le resultat comme alerte a revoir et utiliser une source officielle avant toute decision.
+
+Alertes non bloquantes :
+- Probleme : une erreur technique lors de l'enregistrement d'une alerte ne doit pas annuler une transaction deja acceptee.
+- Contournement : la transaction reste enregistree ; surveiller les erreurs de persistance des alertes et les rejouer par une tache d'administration en production.
+
+Revue manuelle demo :
+- Probleme : T17 utilise l'acteur `system` car le module d'authentification n'est pas encore implemente.
+- Contournement : T18 introduira une trace d'audit applicative ; JWT remplacera ensuite cette valeur par l'utilisateur connecte.
 
 ## 6. Commandes utiles
 

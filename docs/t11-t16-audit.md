@@ -1,4 +1,4 @@
-# Audit T11 a T16
+# Audit T11 a T17
 
 ## Regles conservees
 
@@ -21,11 +21,13 @@
 
 ## Verification realisee
 
-- Les migrations de `lbc_db` sont au niveau `0003_add_client_soft_delete`.
+- Les migrations de `lbc_db` sont au niveau `0004_add_alert_review_fields`.
 - Les colonnes `accounts.balance` et `transactions.amount` sont de type PostgreSQL `numeric`.
 - `clients.deleted_at` est present.
-- Les 18 tests backend passent sur `lbc_test`.
+- Les 30 tests backend passent sur `lbc_test`.
 
 ## Prochaine action
 
-T17 doit creer les alertes automatiquement pour les transactions elevees et les matchs de screening, avec un statut de revue humaine. Les alertes ne doivent pas bloquer ou sanctionner un client sans validation manuelle.
+T17 est termine : les alertes automatiques sont dedupliquees pour les transactions elevees, la frequence inhabituelle et les matchs de screening, puis exposees a une revue manuelle.
+
+T18 doit rendre la revue entierement tracable dans `audit_logs` et preparer l'identite de l'agent de conformite.
