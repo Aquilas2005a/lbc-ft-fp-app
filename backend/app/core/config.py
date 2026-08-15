@@ -1,9 +1,9 @@
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import quote
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     high_transaction_amount: float = Field(default=1_000_000.0, gt=0.0)
     transaction_frequency_count: int = Field(default=3, ge=2, le=100)
     transaction_frequency_window_hours: int = Field(default=24, ge=1, le=168)
+    screening_mode: Literal["mock", "opensanctions", "auto"] = "mock"
+    open_sanctions_api_url: str = "https://api.opensanctions.org"
+    open_sanctions_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("OPENSANCTIONS_API_KEY", "OPEN_SANCTIONS_API_KEY"),
+    )
+    open_sanctions_timeout_seconds: float = Field(default=10.0, gt=0.0, le=30.0)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

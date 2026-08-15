@@ -1,4 +1,4 @@
-# Audit T11 a T20
+# Audit T11 a T20 et adaptateur OpenSanctions
 
 ## Regles conservees
 
@@ -24,7 +24,7 @@
 - Les migrations de `lbc_db` sont au niveau `0005_add_audit_log_indexes`.
 - Les colonnes `accounts.balance` et `transactions.amount` sont de type PostgreSQL `numeric`.
 - `clients.deleted_at` est present.
-- Les 33 tests backend passent sur `lbc_test`.
+- Les 35 tests backend passent sur `lbc_test`.
 
 ## Prochaine action
 
@@ -36,4 +36,6 @@ T19 est termine : les actions metier clients, transactions et screenings sont tr
 
 T20 est termine : le score de risque client est calcule de facon deterministe, borne, explique et trace dans `audit_logs`, sans effet de blocage automatique.
 
-T21 doit reevaluer les regles d'anomalie sur les transactions existantes sans modifier leurs soldes ni leurs statuts.
+L'adaptateur OpenSanctions optionnel est termine : le mode mock reste le defaut, le format officiel `/match/default` est encapsule et teste sans appel reseau reel, et `auto` retombe sur le screening local.
+
+T21 doit ajouter le controle des pays a risque aux regles de transaction, puis reevaluer les transactions existantes sans modifier leurs soldes ni leurs statuts.

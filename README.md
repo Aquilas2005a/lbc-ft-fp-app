@@ -136,6 +136,11 @@ T17 - Alertes automatiques et revue humaine :
 - La migration Alembic `0004_add_alert_review_fields` conserve la note, l'acteur de demonstration et la date de revue.
 - Aucun match flou ne modifie automatiquement le statut de sanction d'un client et aucune alerte ne bloque une transaction : la decision reste humaine.
 
+T18 - Adaptateur OpenSanctions optionnel :
+- Le mode par defaut `SCREENING_MODE=mock` garde la demo hors ligne avec RapidFuzz et la liste locale.
+- `SCREENING_MODE=opensanctions` appelle `/match/default` lorsque `OPENSANCTIONS_API_KEY` est renseignee ; `auto` utilise OpenSanctions puis revient au mode local si le fournisseur est indisponible.
+- La reponse expose le fournisseur utilise (`local` ou `opensanctions`) et les resultats externes sont normalises vers le format de screening interne.
+
 ## 4. Tache immediate apres T17
 
 T18 - Tracabilite de la revue des alertes :
@@ -190,7 +195,7 @@ pgAdmin installe mais PostgreSQL absent localement :
 
 OpenSanctions peut demander une cle API :
 - Probleme : la demo peut etre bloquee si la cle API manque ou si internet est instable.
-- Contournement : garder un mode mock avec une petite liste locale de noms a risque.
+- Contournement : garder `SCREENING_MODE=mock` par defaut ou utiliser `auto`, qui revient a la liste locale si OpenSanctions est indisponible. La cle reste uniquement dans `.env` sous `OPENSANCTIONS_API_KEY`.
 
 GitHub CLI installe mais parfois non visible avec `gh` :
 - Probleme : le terminal peut ne pas trouver `gh` dans le PATH.

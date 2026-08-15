@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.models.client import Client
 from app.services.alerting import create_screening_alerts
 from app.services.matching import match_name
+from app.services.opensanctions import OpenSanctionsUnavailable, match_name as match_opensanctions
 
 router = APIRouter(prefix="/screening", tags=["screening"])
 
@@ -31,9 +32,39 @@ class ScreeningMatchResult(BaseModel):
 
 class ScreeningResponse(BaseModel):
     query_name: str
+    provider: str
     matches_count: int
     has_match: bool
     results: List[ScreeningMatchResult]
+
+
+def _screen(
+    *,
+    name: str,
+    settings: Settings,
+    threshold: float,
+    birth_date=None,
+    nationality: Optional[str] = None,
+) -> tuple[list[dict], str]:
+    if settings.screening_mode in ("opensanctions", "auto"):
+        try:
+            external_matches = match_opensanctions(
+                name=name,
+                birth_date=birth_date,
+                nationality=nationality,
+                api_url=settings.open_sanctions_api_url,
+                api_key=settings.open_sanctions_api_key,
+                timeout_seconds=settings.open_sanctions_timeout_seconds,
+            )
+            return [match for match in external_matches if match["score"] >= threshold], "opensanctions"
+        except OpenSanctionsUnavailable:
+            if settings.screening_mode == "opensanctions":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Le fournisseur OpenSanctions est indisponible ou non configure.",
+                )
+
+    return match_name(query_name=name, threshold=threshold), "local"
 
 
 @router.post("/match", response_model=ScreeningResponse)
@@ -46,7 +77,7 @@ def screen_name(
         if req.threshold is None
         else req.threshold
     )
-    raw_matches = match_name(query_name=req.name, threshold=threshold)
+    raw_matches, provider = _screen(name=req.name, settings=settings, threshold=threshold)
 
     results = [
         ScreeningMatchResult(
@@ -62,6 +93,7 @@ def screen_name(
 
     return ScreeningResponse(
         query_name=req.name,
+        provider=provider,
         matches_count=len(results),
         has_match=len(results) > 0,
         results=results,
@@ -91,7 +123,13 @@ def screen_client(
     match_threshold = (
         settings.default_match_threshold if threshold is None else threshold
     )
-    raw_matches = match_name(query_name=full_name, threshold=match_threshold)
+    raw_matches, provider = _screen(
+        name=full_name,
+        settings=settings,
+        threshold=match_threshold,
+        birth_date=client.birth_date,
+        nationality=client.nationality,
+    )
 
     results = [
         ScreeningMatchResult(
@@ -126,7 +164,10 @@ def screen_client(
         entity_type="Client",
         entity_id=str(client.id),
         user_id=actor,
-        details=f"Screening execute avec {len(raw_matches)} correspondance(s) et {len(alerts)} alerte(s) nouvelle(s).",
+        details=(
+            f"Screening {provider} execute avec {len(raw_matches)} correspondance(s) "
+            f"et {len(alerts)} alerte(s) nouvelle(s)."
+        ),
     )
     try:
         db.commit()
@@ -136,6 +177,7 @@ def screen_client(
 
     return ScreeningResponse(
         query_name=full_name,
+        provider=provider,
         matches_count=len(results),
         has_match=len(results) > 0,
         results=results,
