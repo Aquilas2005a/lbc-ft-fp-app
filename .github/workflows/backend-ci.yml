@@ -14,6 +14,23 @@ jobs:
   backend-tests:
     name: Backend tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: lbc_test
+          POSTGRES_USER: lbc_user
+          POSTGRES_PASSWORD: ci_password
+        options: >-
+          --health-cmd "pg_isready -U lbc_user -d lbc_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      APP_ENV: development
+      DATABASE_URL: postgresql+psycopg://lbc_user:ci_password@localhost:5432/lbc_test
 
     steps:
       - name: Checkout repository
@@ -34,4 +51,5 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         run: |
+          alembic upgrade head
           pytest -q

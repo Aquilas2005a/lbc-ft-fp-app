@@ -1,17 +1,29 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+TransactionType = Literal["credit", "debit", "deposit", "transfer", "withdrawal"]
+TransactionStatus = Literal["completed", "flagged", "pending", "rejected"]
 
 
 class TransactionBase(BaseModel):
     amount: Decimal = Field(..., gt=0, max_digits=18, decimal_places=2)
     currency: str = Field(default="EUR", max_length=10)
-    transaction_type: str = Field(default="transfer", max_length=30)
-    status: str = Field(default="completed", max_length=20)
+    transaction_type: TransactionType = "transfer"
+    status: TransactionStatus = "completed"
     counterparty_name: Optional[str] = Field(None, max_length=150)
     counterparty_account: Optional[str] = Field(None, max_length=50)
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if len(normalized) != 3:
+            raise ValueError("La devise doit etre un code ISO a trois lettres.")
+        return normalized
 
 
 class TransactionCreate(TransactionBase):

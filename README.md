@@ -98,11 +98,45 @@ T10 - Modeles de donnees et persistance backend :
 - Montants stockes en `Decimal`/`NUMERIC(18,2)` avec contraintes de base de donnees, pour eviter les erreurs d'arrondi.
 - Ajout et validation des tests unitaires backend pour les modeles, schemas et configuration.
 
-## 4. Tache immediate a faire apres T10
-
 T11 - Configurer la connexion PostgreSQL :
-- Initialiser la migration de base de donnees avec Alembic pour creer les tables dans PostgreSQL.
-- Verifier que la creation automatique des tables ou les migrations Alembic s'executent proprement.
+- Alembic initialise avec les migrations `0001_initial_tables`, `0002_align_financial_schema` et `0003_add_client_soft_delete`.
+- Les migrations sont l'unique mecanisme de creation/modification des tables : FastAPI ne cree plus de tables automatiquement.
+- Endpoint `/api/v1/health/db` ajoute pour verifier la vraie connexion sans exposer le detail des erreurs SQL.
+- GitHub Actions demarre PostgreSQL, execute `alembic upgrade head`, puis lance les tests d'integration.
+- Les tests utilisent la base dediee `lbc_test`, jamais la base de demonstration `lbc_db`.
+
+T12 - CRUD Clients :
+- Endpoints API de gestion des clients (`POST`, `GET`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}`) dans `backend/app/api/clients.py`.
+- Suppression logique avec `deleted_at` : les clients supprimes ne sont plus exposes par l'API, mais leurs donnees restent en base.
+- Validation des donnees Pydantic et gestion des erreurs 404 / 400.
+
+T13 - CRUD Comptes :
+- Endpoints API de gestion des comptes bancaires (`POST`, `GET`, `GET /{id}`, `PUT /{id}`) dans `backend/app/api/accounts.py`.
+- Validation de l'existence d'un client actif, normalisation du numero de compte et controle d'un format IBAN simple.
+- Les montants restent en `Decimal` et les devises sont normalisees en codes ISO a trois lettres.
+
+T14 - API Transactions :
+- Enregistrement des mouvements financiers (`POST /transactions`, `GET /transactions`, `GET /transactions/{id}`) dans `backend/app/api/transactions.py`.
+- Mise a jour du solde seulement pour une transaction `completed`, avec verrouillage du compte, devise identique et controle de solde insuffisant.
+- Les types et statuts de transaction sont limites a un vocabulaire explicite pour la demo.
+
+T15 - Seed de donnees demo :
+- Script d'injection de donnees demo `backend/app/db/seed.py` (clients PEP/sanctionnes, comptes et transactions a fort montant).
+- Endpoint d'administration `POST /api/v1/seed` reserve a l'environnement `development`.
+- Reinitialisation et insertion realisees dans une seule transaction avec des montants `Decimal`.
+
+T16 - Service de Matching Local RapidFuzz :
+- Integration de `rapidfuzz` pour le screening fuzzy d'identite (`fuzz.token_sort_ratio` / `fuzz.WRatio`).
+- Liste de reference locale pour le screening hors-ligne et endpoints `POST /api/v1/screening/match` et `POST /api/v1/screening/client/{id}`.
+- Normalisation des accents, tirets, espaces et casse ; seuil par defaut de `85` configurable avec `DEFAULT_MATCH_THRESHOLD`.
+
+## 4. Tache immediate a faire apres T16
+
+T17 - Creer modele Alertes et generation auto sur match :
+- Generer automatiquement une alerte lorsqu'une transaction depasse un seuil ou lorsqu'un client correspond a une liste de screening.
+- Ne jamais transformer automatiquement un match flou en decision de sanction : une revue humaine reste obligatoire.
+
+
 
 
 ## 5. Problemes possibles et contournements
@@ -154,6 +188,18 @@ Tests backend avec dependances non installees :
 Warning FastAPI TestClient :
 - Probleme : les tests passent, mais Starlette affiche un avertissement indiquant que le support `httpx` classique est deprecie dans le TestClient.
 - Contournement : garder le test actuel car il est fonctionnel, puis migrer vers `httpx2` ou vers un client de test asynchrone si l'avertissement devient bloquant.
+
+Migrations Alembic non appliquees :
+- Probleme : l'API ne cree plus de tables automatiquement, donc une nouvelle base est vide tant que les migrations ne sont pas lancees.
+- Contournement : executer `alembic upgrade head` dans `backend` avant de demarrer l'API.
+
+Tests et base de demonstration :
+- Probleme : les endpoints de seed sont destructifs pour leur base cible.
+- Contournement : les tests utilisent exclusivement `lbc_test`; ne jamais definir `TEST_DATABASE_URL` vers `lbc_db`.
+
+Matching local :
+- Probleme : un score RapidFuzz est un indicateur de similarite, pas une preuve de sanction ou une decision de conformite.
+- Contournement : conserver le resultat comme alerte a revoir et utiliser une source officielle avant toute decision.
 
 ## 6. Commandes utiles
 

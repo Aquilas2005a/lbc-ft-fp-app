@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     database_url: str | None = None
+    default_match_threshold: float = Field(default=85.0, ge=0.0, le=100.0)
 
     @field_validator("cors_origins", mode="before")
     @classmethod

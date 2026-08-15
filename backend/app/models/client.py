@@ -34,6 +34,11 @@ class Client(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
 
     accounts: Mapped[List["Account"]] = relationship("Account", back_populates="client", cascade="all, delete-orphan")
     alerts: Mapped[List["Alert"]] = relationship("Alert", back_populates="client")

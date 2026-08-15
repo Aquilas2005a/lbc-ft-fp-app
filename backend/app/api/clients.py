@@ -1,0 +1,135 @@
+from datetime import datetime, timezone
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.models.client import Client
+from app.schemas.client import ClientCreate, ClientRead, ClientUpdate
+
+router = APIRouter(prefix="/clients", tags=["clients"])
+
+
+@router.post("", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
+def create_client(
+    client_in: ClientCreate,
+    db: Session = Depends(get_db),
+) -> ClientRead:
+    if client_in.email:
+        existing = db.query(Client).filter(Client.email == client_in.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Un client avec cet email existe deja.",
+            )
+
+    client = Client(**client_in.model_dump())
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    return client
+
+
+@router.get("", response_model=List[ClientRead])
+def list_clients(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    search: Optional[str] = None,
+    is_pep: Optional[bool] = None,
+    is_sanctioned: Optional[bool] = None,
+    db: Session = Depends(get_db),
+) -> List[ClientRead]:
+    query = db.query(Client).filter(Client.deleted_at.is_(None))
+
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                Client.first_name.ilike(pattern),
+                Client.last_name.ilike(pattern),
+                Client.email.ilike(pattern),
+                Client.nationality.ilike(pattern),
+            )
+        )
+
+    if is_pep is not None:
+        query = query.filter(Client.is_pep == is_pep)
+
+    if is_sanctioned is not None:
+        query = query.filter(Client.is_sanctioned == is_sanctioned)
+
+    return query.offset(skip).limit(limit).all()
+
+
+@router.get("/{client_id}", response_model=ClientRead)
+def get_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+) -> ClientRead:
+    client = (
+        db.query(Client)
+        .filter(Client.id == client_id, Client.deleted_at.is_(None))
+        .first()
+    )
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client ID {client_id} introuvable.",
+        )
+    return client
+
+
+@router.put("/{client_id}", response_model=ClientRead)
+def update_client(
+    client_id: int,
+    client_in: ClientUpdate,
+    db: Session = Depends(get_db),
+) -> ClientRead:
+    client = (
+        db.query(Client)
+        .filter(Client.id == client_id, Client.deleted_at.is_(None))
+        .first()
+    )
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client ID {client_id} introuvable.",
+        )
+
+    update_data = client_in.model_dump(exclude_unset=True)
+    if "email" in update_data and update_data["email"] and update_data["email"] != client.email:
+        existing = db.query(Client).filter(Client.email == update_data["email"]).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Un client avec cet email existe deja.",
+            )
+
+    for field, value in update_data.items():
+        setattr(client, field, value)
+
+    db.commit()
+    db.refresh(client)
+    return client
+
+
+@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+) -> None:
+    client = (
+        db.query(Client)
+        .filter(Client.id == client_id, Client.deleted_at.is_(None))
+        .first()
+    )
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client ID {client_id} introuvable.",
+        )
+
+    client.deleted_at = datetime.now(timezone.utc)
+    db.commit()
