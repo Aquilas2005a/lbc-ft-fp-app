@@ -170,13 +170,42 @@ T24 - Initialisation Vite + React + Tailwind :
 - CI frontend enrichie : `npm ci`, `oxlint`, `tsc -b && vite build` s'executent reellement (voir T06).
 - Portee volontairement minimale : navigation, layout et hero avec photo restent a construire en T25, conformement au plan.
 
-## 4. Tache immediate apres T24
+## 4. Frontend T25 a T32
 
 T25 - Layout, navigation et hero avec photo :
-- Construire la navigation (rail lateral bureau / onglets bas mobile) et le hero pleine largeur (~50vh) avec photo de microfinance en Afrique de l'Ouest et degrade aux couleurs de la palette.
+- Navigation par role (agent terrain / superviseur / conformite) : rail lateral sur bureau, onglets en bas sur mobile, elements de menu qui changent selon le role actif.
+- Hero pleine largeur (~50vh) avec photo de microfinance en Afrique de l'Ouest, degrade aux couleurs de la palette (encre + ocre), attribution de la photo visible et lien vers la source (Pexels, licence libre).
+- Image hero hebergee en local en 3 tailles WebP responsive (720/1200/1600px), chargement `lazy`.
 
+T26 - Dashboard KPI superviseur :
+- Bande de risque en "tampon de registre" (element signature reutilise, pas une jauge circulaire) avec repartition faible/moyen/eleve.
+- Registre narratif par section (portefeuille, risque, alertes prioritaires, derniers mouvements) plutot qu'une grille de cartes identiques.
 
+T27 - Formulaire onboarding client :
+- Labels au present, ce que l'agent controle, sans jargon ("Le client exerce une fonction publique importante...").
+- Verification effectuee lors de la reprise T28-T32 : le formulaire n'appelait pas encore le backend (etat local uniquement, message "enregistre localement"). Corrige en meme temps que T32 (voir plus bas) : appelle desormais `createClient` reellement.
 
+T28 - Registre clients (liste + detail) :
+- Disposition maitre-detail coherente avec le rail de navigation de T25 (contenu integre a la meme zone de section, pas de modal).
+- Reutilise le sceau de risque de T26, avec les seuils exacts du backend (`risk_level` dans `backend/app/services/risk.py` : HIGH >= 70, MEDIUM >= 31, sinon LOW).
+- Recherche par nom, fiche detail avec comptes associes charges depuis `/accounts?client_id=`.
+
+T29 - Formulaire transaction :
+- Meme systeme de composants que T27 : `FieldLabel`, `FieldError`, `FormActions`, `PrimaryButton`, `SecondaryButton` factorises dans `frontend/src/components/form.tsx`, et `inputClasses` extrait dans `formStyles.ts` a part (regle oxlint `only-export-components` : un fichier de composants ne doit exporter que des composants).
+
+T30 - Table des alertes avec filtres :
+- Filtres par statut (ouverte / validee / rejetee / escaladee / toutes), police mono pour les identifiants et severites, cf. tokens poses en T24.
+
+T31 - Ecran de decision alerte :
+- Actions Valider / Rejeter / Escalader ; le toast de confirmation reprend le mot exact du bouton cliquer ("Alerte #X — Valider."), pas un libelle generique.
+- Justification obligatoire (3 caracteres minimum, aligne sur la contrainte backend `AlertUpdate.review_note`).
+
+T32 - Client API frontend centralise :
+- `frontend/src/api/client.ts` : point d'entree unique vers le backend, types calques sur les schemas Pydantic reels (`ClientRead`, `TransactionRead`, `AlertRead`, etc.), aucun composant n'appelle `fetch()` directement.
+- `frontend/src/api/useFetch.ts` : hook partage pour les ecrans de liste (chargement/erreur/reload), evite la duplication entre T28 et T30.
+- T27 (onboarding client) branche sur `createClient` a cette occasion, puisque c'etait l'objet de cette tache.
+- URL du backend configurable via `VITE_API_BASE_URL` (`frontend/.env.example`), avec repli sur `http://localhost:8000` si absente.
+- Verification en conditions reelles (pas seulement une lecture de schema) : backend + PostgreSQL demarres localement, creation reelle d'un client, d'un compte et d'une transaction via curl avec l'en-tete `Origin: http://localhost:5173` pour valider CORS (y compris le preflight `OPTIONS` sur `PUT /alerts/{id}/review`). La transaction de test a declenche une vraie alerte automatique (regle T21, seuil 1 000 000), qui a ensuite ete validee via l'endpoint de revue - la chaine complete cliente -> compte -> transaction -> alerte -> decision fonctionne de bout en bout avec les formats de donnees exacts utilises par `api/client.ts`.
 
 ## 5. Problemes possibles et contournements
 
@@ -227,6 +256,22 @@ Contraste de la palette de design :
 Template Vite avec assets par defaut :
 - Probleme : le scaffold `create-vite` le plus recent inclut des logos React/Vite et des icones reseaux sociaux non lies au projet (`hero.png`, `vite.svg`, `react.svg`, `favicon.svg` de marque, `icons.svg`).
 - Contournement : ces fichiers ont ete retires des la creation du frontend (T24) et remplaces par un favicon minimal aux couleurs KORA, avant tout autre developpement.
+
+Formulaire T27 non branche au backend :
+- Probleme : le formulaire onboarding client (T27) enregistrait uniquement en etat local React ("Dossier enregistre localement"), sans appeler l'API.
+- Contournement : corrige lors de l'implementation de T32, qui est justement l'objet de cette tache : le formulaire appelle desormais `createClient` du client API centralise.
+
+Variables VITE_* lues depuis le mauvais dossier :
+- Probleme : Vite ne lit les variables `VITE_*` que depuis un fichier `.env` place a la racine du projet frontend (`frontend/`), pas depuis la racine du depot Git ou se trouve deja `.env.example` pour le backend.
+- Contournement : ajout de `frontend/.env.example` dedie avec `VITE_API_BASE_URL`, et repli automatique sur `http://localhost:8000` dans `api/client.ts` si la variable est absente, pour que l'app fonctionne meme sans configuration locale.
+
+Fichier `frontend/.env` absent du `.gitignore` :
+- Probleme : `frontend/.gitignore` genere par `create-vite` n'excluait pas `.env` / `.env.local`.
+- Contournement : ajoute explicitement, avant qu'un `.env` local ne risque d'etre commite par erreur.
+
+Regle oxlint sur les fichiers de composants (T29) :
+- Probleme : melanger une fonction utilitaire (`inputClasses`) et des composants React dans le meme fichier (`components/form.tsx`) declenche l'avertissement `only-export-components` (casse le Fast Refresh).
+- Contournement : `inputClasses` extrait dans `components/formStyles.ts`, importe separement par les formulaires qui en ont besoin.
 
 Versions Python multiples :
 - Probleme : `python` et `py` peuvent pointer vers des versions differentes.

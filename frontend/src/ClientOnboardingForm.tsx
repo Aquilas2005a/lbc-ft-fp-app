@@ -1,4 +1,7 @@
 import { useState, type FormEvent } from 'react'
+import { createClient } from './api/client'
+import { FieldError, FieldLabel, FormActions, PrimaryButton, SecondaryButton } from './components/form'
+import { inputClasses } from './components/formStyles'
 
 type FormState = {
   firstName: string
@@ -32,40 +35,48 @@ const fieldLabels: Record<keyof FormState, string> = {
   contexte: 'Éléments de contexte',
 }
 
-function inputClasses(hasError: boolean) {
-  return `w-full rounded-sm border bg-papier px-3 py-2.5 font-mono text-sm text-encre placeholder:text-graphite/35 focus:outline-none focus:ring-1 ${
-    hasError ? 'border-tampon focus:border-tampon focus:ring-tampon' : 'border-encre/20 focus:border-encre focus:ring-encre'
-  }`
-}
-
-function FieldError({ show }: { show: boolean }) {
-  if (!show) return null
-  return <p className="mt-1 font-mono text-[10px] text-tampon">Ce champ manque pour ouvrir le dossier.</p>
-}
-
 export default function ClientOnboardingForm() {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [touchedSubmit, setTouchedSubmit] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const missing = requiredFields.filter((field) => !form[field])
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
-    setSaved(false)
+    setStatus('idle')
   }
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     setTouchedSubmit(true)
     if (missing.length > 0) return
-    setSaved(true)
+
+    setStatus('saving')
+    setErrorMessage(null)
+    try {
+      await createClient({
+        first_name: form.firstName,
+        last_name: form.lastName,
+        birth_date: form.birthDate || null,
+        nationality: form.nationality || null,
+        email: form.email || null,
+        is_pep: form.isPep === 'oui',
+      })
+      setStatus('saved')
+      setForm(emptyForm)
+      setTouchedSubmit(false)
+    } catch (err) {
+      setStatus('error')
+      setErrorMessage(err instanceof Error ? err.message : 'Erreur inattendue.')
+    }
   }
 
   const handleReset = () => {
     setForm(emptyForm)
     setTouchedSubmit(false)
-    setSaved(false)
+    setStatus('idle')
   }
 
   return (
@@ -81,9 +92,7 @@ export default function ClientOnboardingForm() {
           <legend className="sr-only">Identité du client</legend>
 
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-graphite/85">
-              {fieldLabels.firstName}
-            </label>
+            <FieldLabel htmlFor="firstName">{fieldLabels.firstName}</FieldLabel>
             <input
               id="firstName"
               type="text"
@@ -96,9 +105,7 @@ export default function ClientOnboardingForm() {
           </div>
 
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-graphite/85">
-              {fieldLabels.lastName}
-            </label>
+            <FieldLabel htmlFor="lastName">{fieldLabels.lastName}</FieldLabel>
             <input
               id="lastName"
               type="text"
@@ -111,9 +118,7 @@ export default function ClientOnboardingForm() {
           </div>
 
           <div>
-            <label htmlFor="birthDate" className="block text-sm font-medium text-graphite/85">
-              {fieldLabels.birthDate}
-            </label>
+            <FieldLabel htmlFor="birthDate">{fieldLabels.birthDate}</FieldLabel>
             <input
               id="birthDate"
               type="date"
@@ -125,9 +130,7 @@ export default function ClientOnboardingForm() {
           </div>
 
           <div>
-            <label htmlFor="nationality" className="block text-sm font-medium text-graphite/85">
-              {fieldLabels.nationality}
-            </label>
+            <FieldLabel htmlFor="nationality">{fieldLabels.nationality}</FieldLabel>
             <input
               id="nationality"
               type="text"
@@ -141,10 +144,9 @@ export default function ClientOnboardingForm() {
           </div>
 
           <div className="sm:col-span-2">
-            <label htmlFor="email" className="block text-sm font-medium text-graphite/85">
+            <FieldLabel htmlFor="email" hint="si le client en a une">
               {fieldLabels.email}
-              <span className="ml-1 font-mono text-[10px] font-normal normal-case text-graphite/40">si le client en a une</span>
-            </label>
+            </FieldLabel>
             <input
               id="email"
               type="email"
@@ -183,10 +185,9 @@ export default function ClientOnboardingForm() {
         </fieldset>
 
         <div>
-          <label htmlFor="contexte" className="block text-sm font-medium text-graphite/85">
+          <FieldLabel htmlFor="contexte" hint="facultatif">
             {fieldLabels.contexte}
-            <span className="ml-1 font-mono text-[10px] font-normal normal-case text-graphite/40">facultatif</span>
-          </label>
+          </FieldLabel>
           <p className="mt-1 text-xs leading-5 text-graphite/55">
             Ce que vous savez déjà sur ce client et qui peut aider une décision plus tard.
           </p>
@@ -199,30 +200,26 @@ export default function ClientOnboardingForm() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 border-t border-encre/12 pt-5">
-          <button
-            type="submit"
-            className="rounded-sm bg-ocre px-5 py-2.5 font-texte text-sm font-semibold text-encre shadow-sm transition-transform hover:-translate-y-0.5"
-          >
-            Enregistrer le dossier
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="rounded-sm border border-encre/20 px-5 py-2.5 font-texte text-sm text-graphite/70 hover:border-encre/40 hover:text-encre"
-          >
+        <FormActions>
+          <PrimaryButton type="submit" disabled={status === 'saving'}>
+            {status === 'saving' ? 'Enregistrement…' : 'Enregistrer le dossier'}
+          </PrimaryButton>
+          <SecondaryButton type="button" onClick={handleReset}>
             Annuler
-          </button>
+          </SecondaryButton>
 
           {touchedSubmit && missing.length > 0 && (
             <p className="font-mono text-[10px] text-tampon">
               {missing.length} champ{missing.length > 1 ? 's' : ''} manque{missing.length > 1 ? 'nt' : ''} encore.
             </p>
           )}
-          {saved && (
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-vert">Dossier enregistré localement.</p>
+          {status === 'saved' && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-vert">Dossier enregistré.</p>
           )}
-        </div>
+          {status === 'error' && errorMessage && (
+            <p className="font-mono text-[10px] text-tampon">Échec : {errorMessage}</p>
+          )}
+        </FormActions>
       </form>
     </div>
   )

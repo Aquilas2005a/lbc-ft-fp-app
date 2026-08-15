@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import Dashboard from './Dashboard'
 import ClientOnboardingForm from './ClientOnboardingForm'
+import ClientRegistry from './ClientRegistry'
+import TransactionForm from './TransactionForm'
+import AlertsRegistry from './AlertsRegistry'
 
 type Role = 'terrain' | 'superviseur' | 'conformite'
 type Tab = 'accueil' | 'dossiers' | 'alertes' | 'clients' | 'audit'
@@ -202,6 +205,12 @@ function App() {
               <Dashboard onNavigate={setActiveTab} />
             ) : activeTab === 'clients' && role === 'terrain' ? (
               <ClientOnboardingForm />
+            ) : activeTab === 'dossiers' && role === 'terrain' ? (
+              <TransactionForm />
+            ) : activeTab === 'clients' && (role === 'superviseur' || role === 'conformite') ? (
+              <ClientRegistry />
+            ) : activeTab === 'alertes' && (role === 'superviseur' || role === 'conformite') ? (
+              <AlertsRegistry />
             ) : activeTab === 'accueil' ? (
               <>
                 <section className="relative isolate overflow-hidden rounded-sm border border-encre/20 bg-encre" style={{ minHeight: '50vh' }}>
