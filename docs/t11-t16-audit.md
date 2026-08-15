@@ -1,4 +1,4 @@
-# Audit T11 a T19
+# Audit T11 a T20
 
 ## Regles conservees
 
@@ -24,7 +24,7 @@
 - Les migrations de `lbc_db` sont au niveau `0005_add_audit_log_indexes`.
 - Les colonnes `accounts.balance` et `transactions.amount` sont de type PostgreSQL `numeric`.
 - `clients.deleted_at` est present.
-- Les 32 tests backend passent sur `lbc_test`.
+- Les 33 tests backend passent sur `lbc_test`.
 
 ## Prochaine action
 
@@ -34,4 +34,6 @@ T18 est termine : une revue d'alerte est tracee avec l'acteur `X-Actor` dans `au
 
 T19 est termine : les actions metier clients, transactions et screenings sont tracees avec `X-Actor`, meme lorsqu'aucune alerte n'est creee.
 
-T20 doit ajouter un scoring de risque client explicable et borne, destine a orienter la revue humaine.
+T20 est termine : le score de risque client est calcule de facon deterministe, borne, explique et trace dans `audit_logs`, sans effet de blocage automatique.
+
+T21 doit reevaluer les regles d'anomalie sur les transactions existantes sans modifier leurs soldes ni leurs statuts.

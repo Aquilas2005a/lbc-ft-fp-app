@@ -23,7 +23,7 @@ def assess_client_risk(db: Session, client: Client) -> tuple[float, list[str]]:
     open_alerts = db.scalar(
         select(func.count(Alert.id)).where(
             Alert.client_id == client.id,
-            Alert.status.in_(("OPEN", "IN_REVIEW", "ESCALATED")),
+            Alert.status.in_(("OPEN", "VALIDATED", "ESCALATED")),
         )
     )
     if open_alerts:
@@ -41,3 +41,11 @@ def assess_client_risk(db: Session, client: Client) -> tuple[float, list[str]]:
         factors.append("Volume cumule de transactions eleve (+15)")
 
     return min(score, 100.0), factors or ["Aucun facteur de risque automatique identifie"]
+
+
+def risk_level(score: float) -> str:
+    if score >= 70.0:
+        return "HIGH"
+    if score >= 31.0:
+        return "MEDIUM"
+    return "LOW"

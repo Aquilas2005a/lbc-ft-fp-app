@@ -153,8 +153,15 @@ T19 - Journal des actions metier :
 ## 4. Tache immediate apres T19
 
 T20 - Scoring de risque client explicable :
-- Calculer un score deterministe de 0 a 100 a partir de facteurs visibles (PEP, statut renseigne, alertes actives et volume de transactions).
-- Exposer les facteurs du score pour aider la revue humaine, sans faire passer ce score pour une decision automatique.
+- `POST /api/v1/clients/{client_id}/risk-assessment` calcule et persiste un score borne entre 0 et 100, avec un niveau `LOW`, `MEDIUM` ou `HIGH`.
+- Les facteurs sont visibles : PEP, statut de sanction renseigne manuellement, alertes actives et volume cumule des transactions finalisees.
+- Chaque evaluation est tracee par `ASSESS_CLIENT_RISK`; le score oriente la revue humaine et ne constitue pas une decision automatique.
+
+## 4. Tache immediate apres T20
+
+T21 - Regles d'anomalies transactionnelles :
+- Isoler et documenter les regles deterministes de montant eleve et de frequence inhabituelle deja utilisees pour les alertes.
+- Ajouter un endpoint de reevaluation pour analyser les transactions existantes sans modifier leur statut ni leur solde.
 
 
 
@@ -232,6 +239,10 @@ Revue manuelle demo :
 Audit sans alerte :
 - Probleme : un screening sans resultat ou une transaction ordinaire peut ne pas creer d'alerte, tout en restant une action importante de conformite.
 - Contournement : T19 cree aussi un evenement d'audit metier independant de l'alerte, avec un resume sans donnees personnelles superflues.
+
+Scoring de risque :
+- Probleme : un score calcule peut sembler etre une decision de conformite s'il n'est pas explique.
+- Contournement : T20 expose les facteurs et le niveau, conserve les champs de sanction comme des valeurs renseignees manuellement et n'ajoute aucun blocage automatique.
 
 ## 6. Commandes utiles
 

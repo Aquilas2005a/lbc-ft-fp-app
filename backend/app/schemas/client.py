@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -36,3 +36,11 @@ class ClientRead(ClientBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class RiskAssessmentRead(BaseModel):
+    client_id: int
+    score: float = Field(ge=0.0, le=100.0)
+    level: Literal["LOW", "MEDIUM", "HIGH"]
+    factors: list[str]
+    evaluated_at: datetime

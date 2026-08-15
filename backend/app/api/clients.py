@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.audit import record_audit
 from app.models.client import Client
-from app.schemas.client import ClientCreate, ClientRead, ClientUpdate
+from app.schemas.client import ClientCreate, ClientRead, ClientUpdate, RiskAssessmentRead
+from app.services.risk import assess_client_risk, risk_level
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
@@ -72,6 +73,46 @@ def list_clients(
         query = query.filter(Client.is_sanctioned == is_sanctioned)
 
     return query.offset(skip).limit(limit).all()
+
+
+@router.post("/{client_id}/risk-assessment", response_model=RiskAssessmentRead)
+def assess_risk(
+    client_id: int,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
+    db: Session = Depends(get_db),
+) -> RiskAssessmentRead:
+    client = (
+        db.query(Client)
+        .filter(Client.id == client_id, Client.deleted_at.is_(None))
+        .first()
+    )
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Client ID {client_id} introuvable.",
+        )
+
+    score, factors = assess_client_risk(db, client)
+    level = risk_level(score)
+    client.risk_score = score
+    evaluated_at = datetime.now(timezone.utc)
+    record_audit(
+        db,
+        action="ASSESS_CLIENT_RISK",
+        entity_type="Client",
+        entity_id=str(client.id),
+        user_id=actor,
+        details=f"Score {score:.0f}/100, niveau {level}, {len(factors)} facteur(s).",
+    )
+    db.commit()
+    db.refresh(client)
+    return RiskAssessmentRead(
+        client_id=client.id,
+        score=score,
+        level=level,
+        factors=factors,
+        evaluated_at=evaluated_at,
+    )
 
 
 @router.get("/{client_id}", response_model=ClientRead)
