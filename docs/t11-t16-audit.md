@@ -24,7 +24,7 @@
 - Les migrations de `lbc_db` sont au niveau `0006_tx_counterparty_country`.
 - Les colonnes `accounts.balance` et `transactions.amount` sont de type PostgreSQL `numeric`.
 - `clients.deleted_at` est present.
-- Les 36 tests backend passent sur `lbc_test`.
+- Les 38 tests backend passent sur `lbc_test` (2 tests d'integration ajoutes lors de la verification T18, voir ci-dessous).
 
 ## Prochaine action
 
@@ -42,6 +42,8 @@ T21 est termine : les regles de montant, frequence et pays a risque sont dedupli
 
 T22 est termine : le score de risque client est borne, explique et trace sans prendre de decision automatique.
 
-T23 est termine : 36 tests backend couvrent les parcours clients, screening, alertes, audit, score et regles de transactions sur `lbc_test`.
+T23 est termine : 38 tests backend couvrent les parcours clients, screening, alertes, audit, score et regles de transactions sur `lbc_test`.
+
+Verification T18 (relecture) : le code de repli `auto` -> `local` et le refus explicite du mode `opensanctions` sans cle etaient deja corrects, mais non couverts par un test au niveau de l'endpoint `POST /api/v1/screening/match` (seul l'adaptateur isole etait teste). Deux tests d'integration ont ete ajoutes dans `backend/tests/test_opensanctions.py` via une surcharge de la dependance `get_settings`. Aucune regression : les 38 tests passent.
 
 T24 doit construire le dashboard React de conformite.

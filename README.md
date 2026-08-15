@@ -140,6 +140,7 @@ T18 - Adaptateur OpenSanctions optionnel :
 - Le mode par defaut `SCREENING_MODE=mock` garde la demo hors ligne avec RapidFuzz et la liste locale.
 - `SCREENING_MODE=opensanctions` appelle `/match/default` lorsque `OPENSANCTIONS_API_KEY` est renseignee ; `auto` utilise OpenSanctions puis revient au mode local si le fournisseur est indisponible.
 - La reponse expose le fournisseur utilise (`local` ou `opensanctions`) et les resultats externes sont normalises vers le format de screening interne.
+- Verification T18 : l'adaptateur etait deja teste isolement (requete/reponse simulees via `httpx.MockTransport`), mais le comportement de bascule au niveau de l'endpoint `POST /api/v1/screening/match` ne l'etait pas. Deux tests d'integration ont ete ajoutes pour couvrir `SCREENING_MODE=auto` sans cle API (repli silencieux vers `local`, statut 200) et `SCREENING_MODE=opensanctions` sans cle API (erreur explicite 503, pas de repli silencieux).
 
 T19 - Workflow alerte :
 - Les alertes suivent les statuts `OPEN`, `VALIDATED`, `REJECTED` et `ESCALATED`; chaque revue exige une note et une transition valide.
@@ -159,7 +160,7 @@ T22 - Score de risque explicable :
 
 T23 - Tests backend principaux :
 - La suite couvre les clients, comptes, transactions, screening local et optionnel, alertes, workflow, audit, scoring et regles transactionnelles.
-- Les 36 tests s'executent contre la base isolee `lbc_test`.
+- Les 38 tests s'executent contre la base isolee `lbc_test` (36 + 2 tests d'integration ajoutes lors de la verification T18 sur le repli de screening).
 
 ## 4. Tache immediate apres T23
 
@@ -194,6 +195,10 @@ pgAdmin installe mais PostgreSQL absent localement :
 OpenSanctions peut demander une cle API :
 - Probleme : la demo peut etre bloquee si la cle API manque ou si internet est instable.
 - Contournement : garder `SCREENING_MODE=mock` par defaut ou utiliser `auto`, qui revient a la liste locale si OpenSanctions est indisponible. La cle reste uniquement dans `.env` sous `OPENSANCTIONS_API_KEY`.
+
+Couverture de test du repli de screening (T18) :
+- Probleme : le repli `auto` -> `local` et le refus explicite du mode `opensanctions` sans cle etaient corrects dans le code mais non verifies par un test au niveau de l'endpoint, seulement au niveau de l'adaptateur isole.
+- Contournement : deux tests d'integration ont ete ajoutes dans `backend/tests/test_opensanctions.py` (`test_screening_endpoint_auto_mode_falls_back_to_local_without_api_key` et `test_screening_endpoint_opensanctions_mode_without_key_returns_503`) en surchargeant la dependance `get_settings` de FastAPI pour simuler chaque mode sans dependre de l'environnement local.
 
 GitHub CLI installe mais parfois non visible avec `gh` :
 - Probleme : le terminal peut ne pas trouver `gh` dans le PATH.
