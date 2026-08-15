@@ -12,7 +12,14 @@ export class ApiError extends Error {
   detail: unknown
 
   constructor(status: number, detail: unknown) {
-    super(typeof detail === 'string' ? detail : `Erreur API (${status})`)
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : typeof detail === 'object' && detail !== null && 'detail' in detail
+          ? String((detail as { detail?: unknown }).detail ?? `Erreur API (${status})`)
+          : `Erreur API (${status})`
+    super(message)
+    this.name = 'ApiError'
     this.status = status
     this.detail = detail
   }
