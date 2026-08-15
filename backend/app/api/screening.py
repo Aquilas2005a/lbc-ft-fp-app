@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -72,6 +72,7 @@ def screen_name(
 def screen_client(
     client_id: int,
     threshold: Optional[float] = Query(None, ge=0.0, le=100.0),
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> ScreeningResponse:
@@ -104,7 +105,7 @@ def screen_client(
         for m in raw_matches
     ]
 
-    # --- T17 : génération automatique d'alertes de screening ---
+    alerts = []
     if raw_matches:
         alerts = create_screening_alerts(db, client=client, matches=raw_matches)
         if alerts:
@@ -115,13 +116,23 @@ def screen_client(
                     action="CREATE_ALERT",
                     entity_type="Alert",
                     entity_id=str(alert.id),
+                    user_id=actor,
                     details=f"Alerte automatique {alert.alert_type} apres screening du client {client.id}.",
                 )
-            try:
-                db.commit()
-            except SQLAlchemyError:
-                db.rollback()
-                # Non-bloquant : la réponse de screening est renvoyée même si l'alerte échoue
+
+    record_audit(
+        db,
+        action="SCREEN_CLIENT",
+        entity_type="Client",
+        entity_id=str(client.id),
+        user_id=actor,
+        details=f"Screening execute avec {len(raw_matches)} correspondance(s) et {len(alerts)} alerte(s) nouvelle(s).",
+    )
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        # Le resultat de screening reste disponible, mais l'erreur est a surveiller en production.
 
     return ScreeningResponse(
         query_name=full_name,

@@ -146,9 +146,15 @@ T18 - Tracabilite de la revue des alertes :
 
 ## 4. Tache immediate apres T18
 
-T19 - Etendre le journal d'audit aux actions metier :
-- Tracer la creation, mise a jour et suppression logique des clients, ainsi que la creation des transactions et les screenings sans alerte.
-- Garder le journal en lecture seule et preparer le remplacement de `X-Actor` par le futur contexte JWT.
+T19 - Journal des actions metier :
+- Les creations, modifications et suppressions logiques de clients, les transactions creees et chaque screening client sont journalises, avec ou sans alerte.
+- Le meme `X-Actor` est attache a l'action metier et aux alertes qu'elle peut creer ; les journaux restent consultables uniquement en lecture seule.
+
+## 4. Tache immediate apres T19
+
+T20 - Scoring de risque client explicable :
+- Calculer un score deterministe de 0 a 100 a partir de facteurs visibles (PEP, statut renseigne, alertes actives et volume de transactions).
+- Exposer les facteurs du score pour aider la revue humaine, sans faire passer ce score pour une decision automatique.
 
 
 
@@ -222,6 +228,10 @@ Alertes non bloquantes :
 Revue manuelle demo :
 - Probleme : T17 utilise l'acteur `system` car le module d'authentification n'est pas encore implemente.
 - Contournement : T18 accepte provisoirement l'en-tete `X-Actor` et conserve une trace en base ; JWT remplacera ensuite cette valeur par l'utilisateur connecte.
+
+Audit sans alerte :
+- Probleme : un screening sans resultat ou une transaction ordinaire peut ne pas creer d'alerte, tout en restant une action importante de conformite.
+- Contournement : T19 cree aussi un evenement d'audit metier independant de l'alerte, avec un resume sans donnees personnelles superflues.
 
 ## 6. Commandes utiles
 

@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.audit import record_audit
 from app.models.client import Client
 from app.schemas.client import ClientCreate, ClientRead, ClientUpdate
 
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/clients", tags=["clients"])
 @router.post("", response_model=ClientRead, status_code=status.HTTP_201_CREATED)
 def create_client(
     client_in: ClientCreate,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
 ) -> ClientRead:
     if client_in.email:
@@ -27,6 +29,15 @@ def create_client(
 
     client = Client(**client_in.model_dump())
     db.add(client)
+    db.flush()
+    record_audit(
+        db,
+        action="CREATE_CLIENT",
+        entity_type="Client",
+        entity_id=str(client.id),
+        user_id=actor,
+        details="Creation d'un profil client.",
+    )
     db.commit()
     db.refresh(client)
     return client
@@ -85,6 +96,7 @@ def get_client(
 def update_client(
     client_id: int,
     client_in: ClientUpdate,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
 ) -> ClientRead:
     client = (
@@ -110,6 +122,14 @@ def update_client(
     for field, value in update_data.items():
         setattr(client, field, value)
 
+    record_audit(
+        db,
+        action="UPDATE_CLIENT",
+        entity_type="Client",
+        entity_id=str(client.id),
+        user_id=actor,
+        details=f"Champs modifies : {', '.join(sorted(update_data)) or 'aucun'}.",
+    )
     db.commit()
     db.refresh(client)
     return client
@@ -118,6 +138,7 @@ def update_client(
 @router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_client(
     client_id: int,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
 ) -> None:
     client = (
@@ -132,4 +153,12 @@ def delete_client(
         )
 
     client.deleted_at = datetime.now(timezone.utc)
+    record_audit(
+        db,
+        action="SOFT_DELETE_CLIENT",
+        entity_type="Client",
+        entity_id=str(client.id),
+        user_id=actor,
+        details="Suppression logique du profil client.",
+    )
     db.commit()

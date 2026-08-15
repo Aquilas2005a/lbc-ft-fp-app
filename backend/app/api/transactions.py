@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -19,6 +19,7 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 @router.post("", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
 def create_transaction(
     tx_in: TransactionCreate,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
 ) -> TransactionRead:
@@ -53,6 +54,18 @@ def create_transaction(
     transaction = Transaction(**tx_in.model_dump())
     db.add(transaction)
     try:
+        db.flush()
+        record_audit(
+            db,
+            action="CREATE_TRANSACTION",
+            entity_type="Transaction",
+            entity_id=str(transaction.id),
+            user_id=actor,
+            details=(
+                f"Transaction {transaction.transaction_type} de {transaction.amount} "
+                f"{transaction.currency}, statut {transaction.status}."
+            ),
+        )
         db.commit()
     except SQLAlchemyError as exc:
         db.rollback()
@@ -78,6 +91,7 @@ def create_transaction(
                 action="CREATE_ALERT",
                 entity_type="Alert",
                 entity_id=str(alert.id),
+                user_id=actor,
                 details=f"Alerte automatique {alert.alert_type} pour transaction {transaction.id}.",
             )
         try:
