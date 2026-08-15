@@ -2,11 +2,13 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.models.client import Client
+from app.services.alerting import create_screening_alerts
 from app.services.matching import match_name
 
 router = APIRouter(prefix="/screening", tags=["screening"])
@@ -100,6 +102,16 @@ def screen_client(
         )
         for m in raw_matches
     ]
+
+    # --- T17 : génération automatique d'alertes de screening ---
+    if raw_matches:
+        alerts = create_screening_alerts(db, client=client, matches=raw_matches)
+        if alerts:
+            try:
+                db.commit()
+            except SQLAlchemyError:
+                db.rollback()
+                # Non-bloquant : la réponse de screening est renvoyée même si l'alerte échoue
 
     return ScreeningResponse(
         query_name=full_name,

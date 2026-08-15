@@ -5,10 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.models.account import Account
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionCreate, TransactionRead
+from app.services.alerting import create_transaction_alerts
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -17,6 +19,7 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 def create_transaction(
     tx_in: TransactionCreate,
     db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
 ) -> TransactionRead:
     account = db.scalar(
         select(Account)
@@ -58,6 +61,21 @@ def create_transaction(
         ) from exc
 
     db.refresh(transaction)
+
+    # --- T17 : génération automatique d'alertes ---
+    alerts = create_transaction_alerts(
+        db,
+        transaction=transaction,
+        client_id=account.client_id,
+        settings=settings,
+    )
+    if alerts:
+        try:
+            db.commit()
+        except SQLAlchemyError:
+            db.rollback()
+            # Les alertes sont non-bloquantes : on ne fait pas échouer la transaction
+
     return transaction
 
 

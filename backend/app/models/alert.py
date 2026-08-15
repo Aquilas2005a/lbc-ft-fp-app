@@ -23,6 +23,9 @@ class Alert(Base):
     severity: Mapped[str] = mapped_column(String(20), default="MEDIUM", nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="OPEN", nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
+    review_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

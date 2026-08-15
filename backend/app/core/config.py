@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     database_url: str | None = None
     default_match_threshold: float = Field(default=85.0, ge=0.0, le=100.0)
+    high_transaction_amount: float = Field(default=1_000_000.0, gt=0.0)
+    transaction_frequency_count: int = Field(default=3, ge=2, le=100)
+    transaction_frequency_window_hours: int = Field(default=24, ge=1, le=168)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
