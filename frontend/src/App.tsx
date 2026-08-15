@@ -247,13 +247,15 @@ function App() {
                         >
                           Ouvrir les dossiers
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab('alertes')}
-                          className="rounded-sm border border-papier/45 bg-encre/35 px-4 py-3 font-texte text-sm font-medium text-papier backdrop-blur transition-colors hover:bg-encre/55"
-                        >
-                          Voir les alertes
-                        </button>
+                        {role !== 'terrain' && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('alertes')}
+                            className="rounded-sm border border-papier/45 bg-encre/35 px-4 py-3 font-texte text-sm font-medium text-papier backdrop-blur transition-colors hover:bg-encre/55"
+                          >
+                            Voir les alertes
+                          </button>
+                        )}
                       </div>
                       <a
                         href="https://www.pexels.com/photo/exchange-27814588/"
