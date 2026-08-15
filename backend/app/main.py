@@ -13,8 +13,6 @@ from app.api.transactions import router as transactions_router
 from app.core.config import Settings, get_settings
 
 
-
-
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
@@ -30,6 +28,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
+        # Keep local development robust when CORS_ORIGINS is overridden by
+        # an environment variable that omits one loopback hostname.
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):5173$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
