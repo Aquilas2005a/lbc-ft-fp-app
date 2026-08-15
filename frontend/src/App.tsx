@@ -194,11 +194,14 @@ function App() {
               <>
                 <section className="relative isolate overflow-hidden rounded-sm border border-encre/20 bg-encre" style={{ minHeight: '50vh' }}>
                   <img
-                    src="https://images.pexels.com/photos/27814588/pexels-photo-27814588.jpeg?auto=compress&cs=tinysrgb&fm=webp&w=1600"
-                    srcSet="https://images.pexels.com/photos/27814588/pexels-photo-27814588.jpeg?auto=compress&cs=tinysrgb&fm=webp&w=720 720w, https://images.pexels.com/photos/27814588/pexels-photo-27814588.jpeg?auto=compress&cs=tinysrgb&fm=webp&w=1200 1200w, https://images.pexels.com/photos/27814588/pexels-photo-27814588.jpeg?auto=compress&cs=tinysrgb&fm=webp&w=1600 1600w"
+                    src="/images/hero-1600.webp"
+                    srcSet="/images/hero-720.webp 720w, /images/hero-1200.webp 1200w, /images/hero-1600.webp 1600w"
                     sizes="(max-width: 768px) 100vw, 1200px"
-                    alt="Échange de monnaie dans un marché nigérian"
+                    alt="Vendeuse de marché ouest-africain recevant un paiement en espèces devant son étal de fruits"
                     loading="lazy"
+                    decoding="async"
+                    width={1600}
+                    height={841}
                     className="absolute inset-0 h-full w-full object-cover"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(23,50,77,0.97)_0%,rgba(23,50,77,0.78)_42%,rgba(23,50,77,0.24)_82%,rgba(23,50,77,0.05)_100%)]" />
