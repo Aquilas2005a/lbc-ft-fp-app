@@ -1,4 +1,4 @@
-# Audit T11 a T21 et adaptateur OpenSanctions
+# Audit T11 a T23 et adaptateur OpenSanctions
 
 ## Regles conservees
 
@@ -40,4 +40,8 @@ L'adaptateur OpenSanctions optionnel est termine : le mode mock reste le defaut,
 
 T21 est termine : les regles de montant, frequence et pays a risque sont dedupliquees, tracees et reutilisables sur les transactions existantes sans modifier leurs soldes ni leurs statuts.
 
-T22 doit fournir des exports CSV filtres pour la revue de conformite.
+T22 est termine : le score de risque client est borne, explique et trace sans prendre de decision automatique.
+
+T23 est termine : 36 tests backend couvrent les parcours clients, screening, alertes, audit, score et regles de transactions sur `lbc_test`.
+
+T24 doit construire le dashboard React de conformite.

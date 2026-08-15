@@ -141,39 +141,30 @@ T18 - Adaptateur OpenSanctions optionnel :
 - `SCREENING_MODE=opensanctions` appelle `/match/default` lorsque `OPENSANCTIONS_API_KEY` est renseignee ; `auto` utilise OpenSanctions puis revient au mode local si le fournisseur est indisponible.
 - La reponse expose le fournisseur utilise (`local` ou `opensanctions`) et les resultats externes sont normalises vers le format de screening interne.
 
-## 4. Tache immediate apres T17
+T19 - Workflow alerte :
+- Les alertes suivent les statuts `OPEN`, `VALIDATED`, `REJECTED` et `ESCALATED`; chaque revue exige une note et une transition valide.
+- La migration `0004_add_alert_review_fields` conserve la note, l'acteur et la date de revue, sans decision de sanction automatique.
 
-T18 - Tracabilite de la revue des alertes :
-- La revue d'une alerte accepte l'en-tete `X-Actor`, conserve cet acteur sur l'alerte et cree un evenement `REVIEW_ALERT` dans `audit_logs` dans la meme transaction.
-- Les alertes automatiques creees par screening ou transaction sont journalisees comme `CREATE_ALERT`.
-- `GET /api/v1/audit-logs` permet une consultation en lecture seule, filtre par action, entite, acteur et dates ; les index PostgreSQL associes sont apportes par la migration `0005_add_audit_log_indexes`.
-- La note detaillee reste sur l'alerte et n'est pas recopinee dans le journal d'audit.
+T20 - Audit log sur les decisions :
+- Les decisions de revue, alertes automatiques et actions metier sont tracees avec `X-Actor` dans `audit_logs`.
+- `GET /api/v1/audit-logs` reste une consultation filtreable en lecture seule ; les index sont apportes par `0005_add_audit_log_indexes`.
 
-## 4. Tache immediate apres T18
-
-T19 - Journal des actions metier :
-- Les creations, modifications et suppressions logiques de clients, les transactions creees et chaque screening client sont journalises, avec ou sans alerte.
-- Le meme `X-Actor` est attache a l'action metier et aux alertes qu'elle peut creer ; les journaux restent consultables uniquement en lecture seule.
-
-## 4. Tache immediate apres T19
-
-T20 - Scoring de risque client explicable :
-- `POST /api/v1/clients/{client_id}/risk-assessment` calcule et persiste un score borne entre 0 et 100, avec un niveau `LOW`, `MEDIUM` ou `HIGH`.
-- Les facteurs sont visibles : PEP, statut de sanction renseigne manuellement, alertes actives et volume cumule des transactions finalisees.
-- Chaque evaluation est tracee par `ASSESS_CLIENT_RISK`; le score oriente la revue humaine et ne constitue pas une decision automatique.
-
-## 4. Tache immediate apres T20
-
-T21 - Regles d'anomalies transactionnelles :
+T21 - Regles transactions :
 - Les alertes couvrent le seuil de montant, la frequence inhabituelle et le pays de contrepartie configure dans `HIGH_RISK_COUNTRIES`.
-- `counterparty_country` est valide en ISO alpha-2 et stocke via la migration `0006_tx_counterparty_country`.
-- `POST /api/v1/transactions/{transaction_id}/evaluate-alerts` reexecute les regles sur une transaction existante, deduplique les alertes et ne modifie ni solde ni statut.
+- `counterparty_country` est valide en ISO alpha-2 et stocke via la migration `0006_tx_counterparty_country`; la reevaluation ne modifie ni solde ni statut.
 
-## 4. Tache immediate apres T21
+T22 - Score de risque explicable :
+- `POST /api/v1/clients/{client_id}/risk-assessment` calcule et persiste un score borne entre 0 et 100, avec les niveaux `LOW`, `MEDIUM` et `HIGH`.
+- Les facteurs sont exposes et l'evaluation est tracee; le score est une aide a la revue humaine, jamais une decision automatique.
 
-T22 - Exports de conformite :
-- Ajouter des exports CSV filtres pour les alertes, transactions et decisions de revue.
-- Garder les exports explicites et telechargeables, sans inclure de secret ni de donnees inutiles.
+T23 - Tests backend principaux :
+- La suite couvre les clients, comptes, transactions, screening local et optionnel, alertes, workflow, audit, scoring et regles transactionnelles.
+- Les 36 tests s'executent contre la base isolee `lbc_test`.
+
+## 4. Tache immediate apres T23
+
+T24 - Dashboard React de conformite :
+- Initialiser l'interface React TypeScript et presenter les clients, alertes, scoring et actions de screening.
 
 
 
