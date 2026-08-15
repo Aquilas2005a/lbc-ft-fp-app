@@ -9,6 +9,7 @@ Couvre :
 """
 from datetime import datetime, timezone
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 from starlette.testclient import TestClient
@@ -35,10 +36,12 @@ def _now() -> datetime:
 
 
 def _make_client(db, *, first_name="Test", last_name="User") -> Client:
+    # Generate unique email with UUID to avoid constraint violations in tests
+    unique_suffix = str(uuid4())[:8]
     client = Client(
         first_name=first_name,
         last_name=last_name,
-        email=f"{first_name.lower()}.{last_name.lower()}@test.invalid",
+        email=f"{first_name.lower()}.{last_name.lower()}.{unique_suffix}@test.invalid",
         risk_score=0.0,
         is_pep=False,
         is_sanctioned=False,
