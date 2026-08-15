@@ -89,16 +89,21 @@ T09 - Connexion pgAdmin :
 - Mot de passe du role PostgreSQL local synchronise avec `.env`, sans supprimer le volume de donnees.
 - Procedure de test et de depannage ajoutee, incluant le risque de suppression avec `docker compose down -v`.
 
-## 4. Tache immediate a faire apres T09
+T10 - Modeles de donnees et persistance backend :
+- Ajout des dependances SQLAlchemy 2.x, psycopg3, Alembic, pydantic-settings et email-validator.
+- Creation des modeles ORM pour Client, Compte (Account), Transaction, Alerte (Alert) et AuditLog.
+- Creation des schemas de validation/serialisation Pydantic correspondants.
+- Configuration du moteur SQLAlchemy et de la dependance `get_db()` de FastAPI dans `backend/app/db`.
+- Configuration lue depuis le `.env` local et URL PostgreSQL encodee pour accepter les caracteres speciaux du mot de passe.
+- Montants stockes en `Decimal`/`NUMERIC(18,2)` avec contraintes de base de donnees, pour eviter les erreurs d'arrondi.
+- Ajout et validation des tests unitaires backend pour les modeles, schemas et configuration.
 
-T10 - Poser les dependances de persistance backend :
-- Ajouter SQLAlchemy, Alembic et le pilote PostgreSQL dans les dependances backend.
-- Preparer la configuration de session base de donnees depuis `DATABASE_URL`.
-- Verifier que les dependances sont installables dans l'environnement virtuel.
+## 4. Tache immediate a faire apres T10
 
-Objectif immediat :
-- Preparer FastAPI a communiquer avec PostgreSQL sans encore creer de tables metier.
-- Garder la configuration locale et les secrets hors GitHub.
+T11 - Configurer la connexion PostgreSQL :
+- Initialiser la migration de base de donnees avec Alembic pour creer les tables dans PostgreSQL.
+- Verifier que la creation automatique des tables ou les migrations Alembic s'executent proprement.
+
 
 ## 5. Problemes possibles et contournements
 
