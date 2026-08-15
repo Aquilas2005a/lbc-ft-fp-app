@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
+from app.core.audit import record_audit
 from app.db.session import get_db
 from app.models.client import Client
 from app.services.alerting import create_screening_alerts
@@ -107,6 +108,15 @@ def screen_client(
     if raw_matches:
         alerts = create_screening_alerts(db, client=client, matches=raw_matches)
         if alerts:
+            db.flush()
+            for alert in alerts:
+                record_audit(
+                    db,
+                    action="CREATE_ALERT",
+                    entity_type="Alert",
+                    entity_id=str(alert.id),
+                    details=f"Alerte automatique {alert.alert_type} apres screening du client {client.id}.",
+                )
             try:
                 db.commit()
             except SQLAlchemyError:

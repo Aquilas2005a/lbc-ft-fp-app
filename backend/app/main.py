@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import __version__
 from app.api.accounts import router as accounts_router
 from app.api.alerts import router as alerts_router
+from app.api.audit_logs import router as audit_logs_router
 from app.api.clients import router as clients_router
 from app.api.health import router as health_router
 from app.api.screening import router as screening_router
@@ -44,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(transactions_router, prefix=settings.api_prefix)
     app.include_router(screening_router, prefix=settings.api_prefix)
     app.include_router(alerts_router, prefix=settings.api_prefix)
+    app.include_router(audit_logs_router, prefix=settings.api_prefix)
     app.include_router(seed_router, prefix=settings.api_prefix)
 
     @app.get("/", tags=["root"])

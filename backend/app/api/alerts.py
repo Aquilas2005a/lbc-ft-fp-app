@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.audit import record_audit
 from app.models.alert import Alert
 from app.schemas.alert import AlertRead, AlertUpdate
 
@@ -86,6 +87,7 @@ def get_alert(
 def review_alert(
     alert_id: int,
     review_data: AlertUpdate,
+    actor: str = Header(default="system", alias="X-Actor", max_length=100),
     db: Session = Depends(get_db),
 ) -> AlertRead:
     """
@@ -125,13 +127,23 @@ def review_alert(
             f"Transitions autorisées depuis {alert.status}: {valid_transitions.get(alert.status, [])}",
         )
 
-    # Mise à jour
+    previous_status = alert.status
     alert.status = review_data.status
     alert.review_note = review_data.review_note
-    alert.reviewed_by = "system"  # En production, utiliser l'utilisateur depuis le contexte
+    alert.reviewed_by = actor
     alert.reviewed_at = datetime.now(timezone.utc)
 
-    db.add(alert)
+    record_audit(
+        db,
+        action="REVIEW_ALERT",
+        entity_type="Alert",
+        entity_id=str(alert.id),
+        user_id=actor,
+        details=(
+            f"Statut modifie de {previous_status} vers {alert.status}. "
+            "La note de revue reste dans l'alerte."
+        ),
+    )
     db.commit()
     db.refresh(alert)
     return alert

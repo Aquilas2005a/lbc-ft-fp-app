@@ -1,4 +1,4 @@
-# Audit T11 a T17
+# Audit T11 a T18
 
 ## Regles conservees
 
@@ -21,13 +21,15 @@
 
 ## Verification realisee
 
-- Les migrations de `lbc_db` sont au niveau `0004_add_alert_review_fields`.
+- Les migrations de `lbc_db` sont au niveau `0005_add_audit_log_indexes`.
 - Les colonnes `accounts.balance` et `transactions.amount` sont de type PostgreSQL `numeric`.
 - `clients.deleted_at` est present.
-- Les 30 tests backend passent sur `lbc_test`.
+- Les 31 tests backend passent sur `lbc_test`.
 
 ## Prochaine action
 
 T17 est termine : les alertes automatiques sont dedupliquees pour les transactions elevees, la frequence inhabituelle et les matchs de screening, puis exposees a une revue manuelle.
 
-T18 doit rendre la revue entierement tracable dans `audit_logs` et preparer l'identite de l'agent de conformite.
+T18 est termine : une revue d'alerte est tracee avec l'acteur `X-Actor` dans `audit_logs`; les alertes automatiques y sont egalement enregistrees et l'API de consultation est en lecture seule.
+
+T19 doit etendre le journal d'audit aux actions metier restantes : clients, transactions et screenings sans nouvelle alerte.

@@ -138,9 +138,17 @@ T17 - Alertes automatiques et revue humaine :
 
 ## 4. Tache immediate apres T17
 
-T18 - Tracabilite complete de la revue :
-- Enregistrer chaque creation, screening et decision sur alerte dans `audit_logs` avec l'acteur applicatif.
-- Remplacer l'acteur de demonstration `system` par l'identite authentifiee lorsque le module JWT sera introduit.
+T18 - Tracabilite de la revue des alertes :
+- La revue d'une alerte accepte l'en-tete `X-Actor`, conserve cet acteur sur l'alerte et cree un evenement `REVIEW_ALERT` dans `audit_logs` dans la meme transaction.
+- Les alertes automatiques creees par screening ou transaction sont journalisees comme `CREATE_ALERT`.
+- `GET /api/v1/audit-logs` permet une consultation en lecture seule, filtre par action, entite, acteur et dates ; les index PostgreSQL associes sont apportes par la migration `0005_add_audit_log_indexes`.
+- La note detaillee reste sur l'alerte et n'est pas recopinee dans le journal d'audit.
+
+## 4. Tache immediate apres T18
+
+T19 - Etendre le journal d'audit aux actions metier :
+- Tracer la creation, mise a jour et suppression logique des clients, ainsi que la creation des transactions et les screenings sans alerte.
+- Garder le journal en lecture seule et preparer le remplacement de `X-Actor` par le futur contexte JWT.
 
 
 
@@ -213,7 +221,7 @@ Alertes non bloquantes :
 
 Revue manuelle demo :
 - Probleme : T17 utilise l'acteur `system` car le module d'authentification n'est pas encore implemente.
-- Contournement : T18 introduira une trace d'audit applicative ; JWT remplacera ensuite cette valeur par l'utilisateur connecte.
+- Contournement : T18 accepte provisoirement l'en-tete `X-Actor` et conserve une trace en base ; JWT remplacera ensuite cette valeur par l'utilisateur connecte.
 
 ## 6. Commandes utiles
 
