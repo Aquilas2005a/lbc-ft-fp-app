@@ -43,13 +43,26 @@ export default function TransactionForm() {
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  const selectedAccount = accounts?.find((account) => account.id === Number(form.accountId))
   const missing: string[] = []
   if (!form.accountId) missing.push('accountId')
   if (!form.amount || Number(form.amount) <= 0) missing.push('amount')
+  if (selectedAccount && form.currency !== selectedAccount.currency) missing.push('currency')
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
     setStatus('idle')
+  }
+
+  const handleAccountChange = (accountId: string) => {
+    const account = accounts?.find((item) => item.id === Number(accountId))
+    setForm((prev) => ({
+      ...prev,
+      accountId,
+      currency: account?.currency ?? prev.currency,
+    }))
+    setStatus('idle')
+    setErrorMessage(null)
   }
 
   const handleSubmit = async (event: FormEvent) => {
@@ -94,13 +107,13 @@ export default function TransactionForm() {
             <select
               id="accountId"
               value={form.accountId}
-              onChange={(e) => update('accountId', e.target.value)}
+              onChange={(e) => handleAccountChange(e.target.value)}
               className={inputClasses(touchedSubmit && !form.accountId)}
             >
               <option value="">Sélectionner un compte</option>
               {accounts?.map((acc) => (
                 <option key={acc.id} value={acc.id}>
-                  {acc.account_number} — client #{acc.client_id}
+                  {acc.account_number} — client #{acc.client_id} · {acc.currency}
                 </option>
               ))}
             </select>
@@ -141,14 +154,20 @@ export default function TransactionForm() {
           </div>
 
           <div>
-            <FieldLabel htmlFor="currency">Devise</FieldLabel>
+            <FieldLabel htmlFor="currency" hint={selectedAccount ? `devise du compte : ${selectedAccount.currency}` : undefined}>
+              Devise
+            </FieldLabel>
             <input
               id="currency"
               type="text"
               maxLength={3}
               value={form.currency}
               onChange={(e) => update('currency', e.target.value.toUpperCase())}
-              className={inputClasses(false)}
+              className={inputClasses(touchedSubmit && Boolean(selectedAccount) && form.currency !== selectedAccount.currency)}
+            />
+            <FieldError
+              show={touchedSubmit && Boolean(selectedAccount) && form.currency !== selectedAccount.currency}
+              message="La devise doit correspondre à celle du compte sélectionné."
             />
           </div>
 
@@ -185,7 +204,7 @@ export default function TransactionForm() {
           <PrimaryButton type="submit" disabled={status === 'saving'}>
             {status === 'saving' ? 'Enregistrement…' : 'Enregistrer le mouvement'}
           </PrimaryButton>
-          <SecondaryButton type="button" onClick={() => { setForm(emptyForm); setTouchedSubmit(false); setStatus('idle') }}>
+          <SecondaryButton type="button" onClick={() => { setForm(emptyForm); setTouchedSubmit(false); setStatus('idle'); setErrorMessage(null) }}>
             Annuler
           </SecondaryButton>
 
