@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/*
+  Design "Registre de decision" - tokens valides pour KORA Conformite.
+  Palette ancree dans le monde des dossiers de credit et tampons de
+  conformite. Voir docs/design-registre-de-decision.md pour le detail.
+*/
+@theme {
+  /* Couleurs de fond et structure */
+  --color-papier: #E7EEE8;      /* Papier de registre - fond principal */
+  --color-encre: #17324D;       /* Encre bancaire - navigation, titres */
+  --color-graphite: #202522;    /* Noir graphite - texte courant */
+
+  /* Couleurs de decision (sceau) */
+  --color-tampon: #9B2948;      /* Tampon decision - CRITIQUE / A REVOIR */
+  --color-ocre: #C8922D;        /* Ocre de caisse - montants, blocs pleins */
+  --color-ocre-texte: #8A5F0F;  /* Variante ocre assombrie - texte lisible (AA 4.78:1) */
+  --color-vert: #3F7057;        /* Vert validation - conforme */
+
+  /* Nuances derivees pour surfaces et bordures */
+  --color-papier-soutenu: #D8E2D9;
+  --color-encre-clair: #2C4A6B;
+
+  /* Typographie */
+  --font-display: "Yeseva One", Georgia, serif;
+  --font-texte: "Noto Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-papier);
+    color: var(--color-graphite);
+    font-family: var(--font-texte);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-encre);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

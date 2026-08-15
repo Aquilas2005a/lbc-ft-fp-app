@@ -65,8 +65,8 @@ T05 - CI backend minimale :
 
 T06 - CI frontend minimale :
 - Workflow cree : `.github/workflows/frontend-ci.yml`.
-- Verification actuelle : presence du dossier `frontend/`, presence de `.env.example`, disponibilite de Node.js.
-- Le workflow sera enrichi avec le build Vite React apres T24.
+- Verification initiale : presence du dossier `frontend/`, presence de `.env.example`, disponibilite de Node.js.
+- Enrichi en T24 : le workflow installe les dependances (`npm ci`), lance le lint (`oxlint`) et le build (`tsc -b && vite build`) reels.
 
 T07 - Squelette FastAPI :
 - Application backend creee dans `backend/app`.
@@ -162,10 +162,18 @@ T23 - Tests backend principaux :
 - La suite couvre les clients, comptes, transactions, screening local et optionnel, alertes, workflow, audit, scoring et regles transactionnelles.
 - Les 38 tests s'executent contre la base isolee `lbc_test` (36 + 2 tests d'integration ajoutes lors de la verification T18 sur le repli de screening).
 
-## 4. Tache immediate apres T23
+T24 - Initialisation Vite + React + Tailwind :
+- Frontend initialise dans `frontend/` avec Vite, React 19, TypeScript et Tailwind CSS v4 (`@tailwindcss/vite`).
+- Tokens du design "Registre de decision" poses dans `frontend/src/index.css` via `@theme` : palette (papier, encre, tampon, ocre, vert, graphite), typographie (Yeseva One en display, Noto Sans en texte, IBM Plex Mono en donnees/montants), focus clavier visible et `prefers-reduced-motion` respecte.
+- Verification de contraste WCAG AA faite sur la palette : le rouge "Tampon decision" passe (6.34:1) ; l'ocre brut ne passait pas en texte (2.34:1), une variante assombrie `--color-ocre-texte` (#8A5F0F, 4.78:1) a ete ajoutee pour tout texte/bordure, l'ocre brut restant reserve aux blocs pleins.
+- Assets par defaut du template Vite retires (logos React/Vite, icones reseaux sociaux) pour eviter toute confusion avec l'identite KORA.
+- CI frontend enrichie : `npm ci`, `oxlint`, `tsc -b && vite build` s'executent reellement (voir T06).
+- Portee volontairement minimale : navigation, layout et hero avec photo restent a construire en T25, conformement au plan.
 
-T24 - Dashboard React de conformite :
-- Initialiser l'interface React TypeScript et presenter les clients, alertes, scoring et actions de screening.
+## 4. Tache immediate apres T24
+
+T25 - Layout, navigation et hero avec photo :
+- Construire la navigation (rail lateral bureau / onglets bas mobile) et le hero pleine largeur (~50vh) avec photo de microfinance en Afrique de l'Ouest et degrade aux couleurs de la palette.
 
 
 
@@ -210,7 +218,15 @@ GitHub Projects demande un scope supplementaire :
 
 CI creee avant le code applicatif :
 - Probleme : il n'y a pas encore de backend FastAPI ni de frontend Vite React.
-- Contournement : mettre des workflows structurels maintenant, puis les transformer en tests/builds reels aux taches T07 et T24.
+- Contournement : mettre des workflows structurels maintenant, puis les transformer en tests/builds reels aux taches T07 et T24 (fait pour les deux).
+
+Contraste de la palette de design :
+- Probleme : l'ocre brut de la palette "Registre de decision" (#C8922D) est trop clair pour du texte ou des bordures sur le fond papier (#E7EEE8), ratio WCAG 2.34:1, sous le seuil AA de 4.5:1.
+- Contournement : `--color-ocre-texte` (#8A5F0F, ratio 4.78:1) est reserve au texte et aux bordures ; l'ocre brut reste utilisable uniquement pour des blocs pleins (fond colore avec texte clair dessus).
+
+Template Vite avec assets par defaut :
+- Probleme : le scaffold `create-vite` le plus recent inclut des logos React/Vite et des icones reseaux sociaux non lies au projet (`hero.png`, `vite.svg`, `react.svg`, `favicon.svg` de marque, `icons.svg`).
+- Contournement : ces fichiers ont ete retires des la creation du frontend (T24) et remplaces par un favicon minimal aux couleurs KORA, avant tout autre developpement.
 
 Versions Python multiples :
 - Probleme : `python` et `py` peuvent pointer vers des versions differentes.

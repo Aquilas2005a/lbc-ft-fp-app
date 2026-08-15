@@ -47,3 +47,5 @@ T23 est termine : 38 tests backend couvrent les parcours clients, screening, ale
 Verification T18 (relecture) : le code de repli `auto` -> `local` et le refus explicite du mode `opensanctions` sans cle etaient deja corrects, mais non couverts par un test au niveau de l'endpoint `POST /api/v1/screening/match` (seul l'adaptateur isole etait teste). Deux tests d'integration ont ete ajoutes dans `backend/tests/test_opensanctions.py` via une surcharge de la dependance `get_settings`. Aucune regression : les 38 tests passent.
 
 T24 doit construire le dashboard React de conformite.
+
+T24 est termine : Vite + React 19 + TypeScript + Tailwind CSS v4 sont initialises dans `frontend/`, avec les tokens du design "Registre de decision" (`@theme` dans `index.css`). Contraste WCAG verifie sur toute la palette ; l'ocre brut ne passait pas en texte (2.34:1), une variante `--color-ocre-texte` a ete ajoutee (4.78:1). Build (`tsc -b && vite build`) et lint (`oxlint`) passent, CI frontend mise a jour pour executer les deux reellement. Assets par defaut du template retires. Portee limitee a l'initialisation : navigation, layout et hero restent a construire en T25.

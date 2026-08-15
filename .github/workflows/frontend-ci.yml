@@ -11,8 +11,8 @@ on:
       - develop
 
 jobs:
-  frontend-structure:
-    name: Frontend structure check
+  frontend-build:
+    name: Frontend build
     runs-on: ubuntu-latest
 
     steps:
@@ -22,16 +22,18 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Verify frontend workspace
-        run: |
-          test -d frontend
-          test -f .env.example
-          node --version
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
 
-      - name: Prepare for future React build
-        run: |
-          echo "Vite React will be initialized in T24."
-          echo "Frontend build checks will be expanded after package.json exists."
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
 
+      - name: Build
+        working-directory: frontend
+        run: npm run build
