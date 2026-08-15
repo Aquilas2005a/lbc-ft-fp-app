@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Dashboard from './Dashboard'
 
 type Role = 'terrain' | 'superviseur' | 'conformite'
 type Tab = 'accueil' | 'dossiers' | 'alertes' | 'clients' | 'audit'
@@ -156,7 +157,11 @@ function App() {
                   <span>{roleInfo.label}</span>
                 </div>
                 <p className="truncate font-display text-lg text-encre sm:text-xl">
-                  {activeTab === 'accueil' ? 'Accueil opérationnel' : tabCopy[activeTab].title}
+                  {activeTab === 'accueil'
+                    ? role === 'superviseur'
+                      ? 'Tableau de bord'
+                      : 'Accueil opérationnel'
+                    : tabCopy[activeTab].title}
                 </p>
               </div>
 
@@ -190,7 +195,9 @@ function App() {
           </nav>
 
           <section className="flex-1 px-4 pb-8 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
-            {activeTab === 'accueil' ? (
+            {activeTab === 'accueil' && role === 'superviseur' ? (
+              <Dashboard onNavigate={setActiveTab} />
+            ) : activeTab === 'accueil' ? (
               <>
                 <section className="relative isolate overflow-hidden rounded-sm border border-encre/20 bg-encre" style={{ minHeight: '50vh' }}>
                   <img
