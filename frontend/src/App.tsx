@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Dashboard from './Dashboard'
+import ClientOnboardingForm from './ClientOnboardingForm'
 
 type Role = 'terrain' | 'superviseur' | 'conformite'
 type Tab = 'accueil' | 'dossiers' | 'alertes' | 'clients' | 'audit'
@@ -161,7 +162,9 @@ function App() {
                     ? role === 'superviseur'
                       ? 'Tableau de bord'
                       : 'Accueil opérationnel'
-                    : tabCopy[activeTab].title}
+                    : activeTab === 'clients' && role === 'terrain'
+                      ? 'Nouveau dossier'
+                      : tabCopy[activeTab].title}
                 </p>
               </div>
 
@@ -197,6 +200,8 @@ function App() {
           <section className="flex-1 px-4 pb-8 pt-5 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
             {activeTab === 'accueil' && role === 'superviseur' ? (
               <Dashboard onNavigate={setActiveTab} />
+            ) : activeTab === 'clients' && role === 'terrain' ? (
+              <ClientOnboardingForm />
             ) : activeTab === 'accueil' ? (
               <>
                 <section className="relative isolate overflow-hidden rounded-sm border border-encre/20 bg-encre" style={{ minHeight: '50vh' }}>
