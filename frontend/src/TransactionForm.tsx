@@ -44,10 +44,11 @@ export default function TransactionForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const selectedAccount = accounts?.find((account) => account.id === Number(form.accountId))
+  const currencyMismatch = Boolean(selectedAccount) && form.currency !== selectedAccount?.currency
   const missing: string[] = []
   if (!form.accountId) missing.push('accountId')
   if (!form.amount || Number(form.amount) <= 0) missing.push('amount')
-  if (selectedAccount && form.currency !== selectedAccount.currency) missing.push('currency')
+  if (currencyMismatch) missing.push('currency')
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -163,10 +164,10 @@ export default function TransactionForm() {
               maxLength={3}
               value={form.currency}
               onChange={(e) => update('currency', e.target.value.toUpperCase())}
-              className={inputClasses(touchedSubmit && Boolean(selectedAccount) && form.currency !== selectedAccount.currency)}
+              className={inputClasses(touchedSubmit && currencyMismatch)}
             />
             <FieldError
-              show={touchedSubmit && Boolean(selectedAccount) && form.currency !== selectedAccount.currency}
+              show={touchedSubmit && currencyMismatch}
               message="La devise doit correspondre à celle du compte sélectionné."
             />
           </div>
