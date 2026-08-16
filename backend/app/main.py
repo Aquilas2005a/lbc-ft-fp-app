@@ -36,8 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Health router
-    app.include_router(health_router)
+    # Health router - expose only under the API prefix to avoid duplicate routes
     app.include_router(health_router, prefix=settings.api_prefix)
 
     # API v1 Business Routers
@@ -54,8 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {
             "service": settings.app_name,
             "version": __version__,
-            "health": "/health",
-            "health_db": "/health/db",
+            # Document the health endpoints under the configured API prefix
+            "health": f"{settings.api_prefix}/health",
+            "health_db": f"{settings.api_prefix}/health/db",
             "docs": "/docs",
         }
 
